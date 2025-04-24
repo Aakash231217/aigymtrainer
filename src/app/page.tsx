@@ -1,108 +1,172 @@
+"use client"
 import TerminalOverlay from "@/components/TerminalOverlay";
 import { Button } from "@/components/ui/button";
 import UserPrograms from "@/components/UserPrograms";
-import { ArrowRightIcon } from "lucide-react";
+import { ArrowRightIcon, ActivityIcon, BrainIcon, DumbbellIcon } from "lucide-react";
 import Link from "next/link";
 
 const HomePage = () => {
   return (
-    <div className="flex flex-col min-h-screen text-foreground overflow-hidden">
+    <div className="flex flex-col min-h-screen text-foreground overflow-hidden bg-gradient-to-b from-background to-background/95">
+      {/* Animated background elements */}
+      <div className="fixed inset-0 z-0">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-secondary/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/3 right-1/3 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
+        
+        {/* Grid overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(0deg,transparent_24px,var(--border)_25px),linear-gradient(90deg,transparent_24px,var(--border)_25px)] bg-[size:25px_25px] opacity-[0.02]" />
+      </div>
+
+      {/* Hero Section */}
       <section className="relative z-10 py-24 flex-grow">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative">
-            {/* CORNER DECARATION */}
-            <div className="absolute -top-10 left-0 w-40 h-40 border-l-2 border-t-2" />
-
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative">
+            {/* Decorative elements */}
+            <div className="absolute -top-16 -left-16 w-64 h-64 border-l-2 border-t-2 border-primary/20 rounded-tl-3xl" />
+            <div className="absolute -bottom-16 -right-16 w-64 h-64 border-r-2 border-b-2 border-primary/20 rounded-br-3xl" />
+            
             {/* LEFT SIDE CONTENT */}
             <div className="lg:col-span-7 space-y-8 relative">
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight">
-                <div>
-                  <span className="text-foreground">Transform</span>
+              <div className="inline-block px-4 py-1 bg-primary/10 rounded-full mb-6">
+                <span className="text-primary font-mono text-sm">AI-POWERED FITNESS REVOLUTION</span>
+              </div>
+              
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
+                <div className="overflow-hidden">
+                  <span className="text-foreground inline-block transform transition-transform duration-700 translate-y-0 opacity-100">
+                    Transform
+                  </span>
                 </div>
-                <div>
-                  <span className="text-primary">Your Body</span>
+                <div className="overflow-hidden pt-2">
+                  <span className="text-primary bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent inline-block transform transition-transform duration-700 translate-y-0 opacity-100">
+                    Your Body
+                  </span>
                 </div>
-                <div className="pt-2">
-                  <span className="text-foreground">With Advanced</span>
+                <div className="overflow-hidden pt-2">
+                  <span className="text-foreground inline-block transform transition-transform duration-700 translate-y-0 opacity-100">
+                    With Advanced
+                  </span>
                 </div>
-                <div className="pt-2">
-                  <span className="text-foreground">AI</span>
-                  <span className="text-primary"> Technology</span>
+                <div className="overflow-hidden pt-2">
+                  <span className="transform transition-transform duration-700 translate-y-0 opacity-100">
+                    <span className="text-foreground">AI</span>
+                    <span className="text-primary bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent"> Technology</span>
+                  </span>
                 </div>
               </h1>
 
-              {/* SEPERATOR LINE */}
-              <div className="h-px w-full bg-gradient-to-r from-primary via-secondary to-primary opacity-50"></div>
+              {/* Animated separator line */}
+              <div className="relative h-px w-full overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary via-secondary to-primary opacity-70"></div>
+                <div 
+                  className="h-full w-1/2 bg-white animate-pulse"
+                />
+              </div>
 
-              <p className="text-xl text-muted-foreground w-2/3">
-                Talk to our AI assistant and get personalized diet plans and workout routines
-                designed just for you
+              <p className="text-xl text-muted-foreground md:w-4/5 leading-relaxed">
+                Experience the future of fitness with our AI assistant that creates 
+                personalized diet plans and workout routines tailored to your unique body,
+                goals, and preferences.
               </p>
 
               {/* STATS */}
-              <div className="flex items-center gap-10 py-6 font-mono">
-                <div className="flex flex-col">
-                  <div className="text-2xl text-primary">500+</div>
-                  <div className="text-xs uppercase tracking-wider">ACTIVE USERS</div>
+              <div className="flex flex-wrap items-center gap-10 py-6 font-mono">
+                <div className="flex flex-col group">
+                  <div className="text-3xl text-primary transition-transform hover:scale-110">500+</div>
+                  <div className="text-xs uppercase tracking-wider mt-1">ACTIVE USERS</div>
                 </div>
                 <div className="h-12 w-px bg-gradient-to-b from-transparent via-border to-transparent"></div>
-                <div className="flex flex-col">
-                  <div className="text-2xl text-primary">3min</div>
-                  <div className="text-xs uppercase tracking-wider">GENERATION</div>
+                <div className="flex flex-col group">
+                  <div className="text-3xl text-primary transition-transform hover:scale-110">3min</div>
+                  <div className="text-xs uppercase tracking-wider mt-1">GENERATION</div>
                 </div>
                 <div className="h-12 w-px bg-gradient-to-b from-transparent via-border to-transparent"></div>
-                <div className="flex flex-col">
-                  <div className="text-2xl text-primary">100%</div>
-                  <div className="text-xs uppercase tracking-wider">PERSONALIZED</div>
+                <div className="flex flex-col group">
+                  <div className="text-3xl text-primary transition-transform hover:scale-110">100%</div>
+                  <div className="text-xs uppercase tracking-wider mt-1">PERSONALIZED</div>
                 </div>
               </div>
 
               {/* BUTTON */}
-              <div className="flex flex-col sm:flex-row gap-4 pt-6">
+              <div className="flex flex-col sm:flex-row gap-6 pt-8">
                 <Button
                   size="lg"
                   asChild
-                  className="overflow-hidden bg-primary text-primary-foreground px-8 py-6 text-lg font-medium"
+                  className="overflow-hidden bg-gradient-to-r from-primary to-primary hover:from-primary hover:to-secondary text-primary-foreground px-8 py-7 text-lg font-medium group relative"
                 >
                   <Link href={"/generate-program"} className="flex items-center font-mono">
                     Build Your Program
-                    <ArrowRightIcon className="ml-2 size-5" />
+                    <ArrowRightIcon className="ml-2 size-5 transition-transform group-hover:translate-x-1" />
+                    <span className="absolute inset-0 w-full h-full bg-white/10 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-300" />
                   </Link>
+                </Button>
+                
+                <Button
+                  size="lg"
+                  variant="outline"
+                  asChild
+                  className="border-primary/30 text-foreground px-8 py-7 text-lg font-medium hover:bg-primary/10"
+                >
+                  
                 </Button>
               </div>
             </div>
 
             {/* RIGHT SIDE CONTENT */}
             <div className="lg:col-span-5 relative">
-              {/* CORNER PIECES */}
+              {/* Glowing outline */}
+              <div className="absolute -inset-8 bg-gradient-to-r from-primary/20 via-secondary/20 to-primary/20 rounded-xl blur-xl opacity-30" />
+              
+              {/* CORNER PIECES with animation */}
               <div className="absolute -inset-4 pointer-events-none">
-                <div className="absolute top-0 left-0 w-16 h-16 border-l-2 border-t-2 border-border" />
-                <div className="absolute top-0 right-0 w-16 h-16 border-r-2 border-t-2 border-border" />
-                <div className="absolute bottom-0 left-0 w-16 h-16 border-l-2 border-b-2 border-border" />
-                <div className="absolute bottom-0 right-0 w-16 h-16 border-r-2 border-b-2 border-border" />
+                <div className="absolute top-0 left-0 w-16 h-16 border-l-2 border-t-2 border-primary animate-pulse" />
+                <div className="absolute top-0 right-0 w-16 h-16 border-r-2 border-t-2 border-primary animate-pulse" />
+                <div className="absolute bottom-0 left-0 w-16 h-16 border-l-2 border-b-2 border-primary animate-pulse" />
+                <div className="absolute bottom-0 right-0 w-16 h-16 border-r-2 border-b-2 border-primary animate-pulse" />
               </div>
 
-              {/* IMAGE CONTANINER */}
+              {/* IMAGE CONTAINER */}
               <div className="relative aspect-square max-w-lg mx-auto">
-                <div className="relative overflow-hidden rounded-lg bg-cyber-black">
+                <div className="relative overflow-hidden rounded-lg bg-cyber-black shadow-2xl">
+                  {/* Semi-transparent gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/10 z-10 mix-blend-overlay" />
+                  
                   <img
                     src="/hero-ai3.png"
                     alt="AI Fitness Coach"
                     className="size-full object-cover object-center"
                   />
 
-                  {/* SCAN LINE */}
-                  <div className="absolute inset-0 bg-[linear-gradient(transparent_0%,transparent_calc(50%-1px),var(--cyber-glow-primary)_50%,transparent_calc(50%+1px),transparent_100%)] bg-[length:100%_8px] animate-scanline pointer-events-none" />
+                  {/* SCAN LINES */}
+                  <div className="absolute inset-0 bg-[linear-gradient(transparent_0%,transparent_calc(50%-1px),var(--cyber-glow-primary)_50%,transparent_calc(50%+1px),transparent_100%)] bg-[length:100%_8px] animate-scanline pointer-events-none z-20" />
+                  
+                  {/* Horizontal scan effect - using CSS animation instead of framer-motion */}
+                  <div
+                    className="absolute inset-0 h-20 bg-gradient-to-b from-transparent via-primary/20 to-transparent pointer-events-none z-20 animate-scan-vertical"
+                  />
 
                   {/* DECORATIONS ON TOP THE IMAGE */}
-                  <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute top-1/3 left-1/3 w-1/3 h-1/3 border border-primary/40 rounded-full" />
+                  <div className="absolute inset-0 pointer-events-none z-20">
+                    <div className="absolute top-1/3 left-1/3 w-1/3 h-1/3 border border-primary/60 rounded-full animate-pulse" />
+                    
+                    {/* Targeting reticle */}
+                    <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" fill="none">
+                      <circle cx="50" cy="50" r="30" stroke="rgba(var(--primary), 0.3)" strokeWidth="0.5" />
+                      <circle cx="50" cy="50" r="20" stroke="rgba(var(--primary), 0.3)" strokeWidth="0.5" />
+                      <line x1="0" y1="50" x2="100" y2="50" stroke="rgba(var(--primary), 0.2)" strokeWidth="0.5" strokeDasharray="2 4" />
+                      <line x1="50" y1="0" x2="50" y2="100" stroke="rgba(var(--primary), 0.2)" strokeWidth="0.5" strokeDasharray="2 4" />
+                    </svg>
 
-                    {/* Targeting lines */}
-                    <div className="absolute top-1/2 left-0 w-1/4 h-px bg-primary/50" />
-                    <div className="absolute top-1/2 right-0 w-1/4 h-px bg-primary/50" />
-                    <div className="absolute top-0 left-1/2 h-1/4 w-px bg-primary/50" />
-                    <div className="absolute bottom-0 left-1/2 h-1/4 w-px bg-primary/50" />
+                    {/* Data readouts */}
+                    <div className="absolute top-4 right-4 bg-background/30 backdrop-blur-sm p-2 rounded border border-primary/30 font-mono text-xs animate-pulse">
+                      <div className="text-primary">ANALYZING PHYSIQUE</div>
+                    </div>
+                    
+                    <div className="absolute bottom-4 left-4 bg-background/30 backdrop-blur-sm p-2 rounded border border-primary/30 font-mono text-xs">
+                      <div className="text-primary mb-1">BODY METRICS:</div>
+                      <div className="text-foreground/70">OPTIMIZING...</div>
+                    </div>
                   </div>
 
                   <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
@@ -116,8 +180,172 @@ const HomePage = () => {
         </div>
       </section>
 
-      <UserPrograms />
+      {/* Features section */}
+      <section className="relative z-10 py-24 bg-gradient-to-b from-background/50 to-background">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <div className="inline-block px-4 py-1 bg-primary/10 rounded-full mb-4">
+              <span className="text-primary font-mono text-sm">OUR TECHNOLOGY</span>
+            </div>
+            <h2 className="text-4xl font-bold mb-4">Advanced AI-Powered <span className="text-primary">Features</span></h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Our cutting-edge technology creates truly personalized fitness experiences that adapt to your unique body and goals
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Feature 1 */}
+            <div className="bg-background/50 backdrop-blur-sm p-8 rounded-lg border border-border relative group hover:border-primary/50 transition-colors">
+              <div className="absolute -inset-px bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute top-0 right-0 w-16 h-16 border-r-2 border-t-2 border-primary/30 rounded-tr-lg" />
+              
+              <div className="size-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-6">
+                <BrainIcon className="size-6" />
+              </div>
+              <h3 className="text-xl font-bold mb-3">AI Body Analysis</h3>
+              <p className="text-muted-foreground">
+                Our AI analyzes your unique physique, metabolism, and genetic factors to create 
+                truly personalized programs that maximize results
+              </p>
+            </div>
+            
+            {/* Feature 2 */}
+            <div className="bg-background/50 backdrop-blur-sm p-8 rounded-lg border border-border relative group hover:border-primary/50 transition-colors">
+              <div className="absolute -inset-px bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute top-0 right-0 w-16 h-16 border-r-2 border-t-2 border-primary/30 rounded-tr-lg" />
+              
+              <div className="size-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-6">
+                <DumbbellIcon className="size-6" />
+              </div>
+              <h3 className="text-xl font-bold mb-3">Dynamic Workouts</h3>
+              <p className="text-muted-foreground">
+                Intelligent workout plans that adapt to your progress, equipment availability, 
+                and schedule for optimal fitness gains
+              </p>
+            </div>
+            
+            {/* Feature 3 */}
+            <div className="bg-background/50 backdrop-blur-sm p-8 rounded-lg border border-border relative group hover:border-primary/50 transition-colors">
+              <div className="absolute -inset-px bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute top-0 right-0 w-16 h-16 border-r-2 border-t-2 border-primary/30 rounded-tr-lg" />
+              
+              <div className="size-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-6">
+                <ActivityIcon className="size-6" />
+              </div>
+              <h3 className="text-xl font-bold mb-3">Nutrition Science</h3>
+              <p className="text-muted-foreground">
+                Precision nutrition plans based on cutting-edge dietary science that align with 
+                your taste preferences and lifestyle
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* User Programs with enhanced styling */}
+      <div className="relative z-10">
+        <UserPrograms />
+      </div>
+      
+      {/* Call to action */}
+      <section className="relative z-10 py-24 overflow-hidden">
+        <div className="container mx-auto px-4">
+          <div className="relative rounded-xl bg-gradient-to-br from-background to-background/80 border border-primary/20 p-12 overflow-hidden">
+            {/* Background effects */}
+            <div className="absolute inset-0 overflow-hidden">
+              <div className="absolute -top-20 -right-20 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
+              <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-secondary/10 rounded-full blur-3xl" />
+              
+              {/* Grid pattern */}
+              <div className="absolute inset-0 bg-[linear-gradient(0deg,transparent_24px,var(--border)_25px),linear-gradient(90deg,transparent_24px,var(--border)_25px)] bg-[size:25px_25px] opacity-[0.02]" />
+            </div>
+            
+            <div className="relative flex flex-col md:flex-row items-center justify-between gap-8">
+              <div className="max-w-2xl">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to transform your <span className="text-primary">fitness journey</span>?</h2>
+                <p className="text-muted-foreground mb-6">
+                  Join thousands of satisfied users who have achieved their fitness goals with our
+                  AI-powered personalized programs.
+                </p>
+                
+                {/* Social proof */}
+
+                  <p className="text-sm text-muted-foreground">
+                    <span className="font-medium text-foreground">110+ users</span> activated their program this week
+                  </p>
+            
+              </div>
+              
+              <Button
+                size="lg"
+                asChild
+                className="overflow-hidden bg-gradient-to-r from-primary to-secondary text-primary-foreground px-8 py-7 text-lg font-medium group whitespace-nowrap"
+              >
+                <Link href={"/generate-program"} className="flex items-center font-mono">
+                  Start Now
+                  <ArrowRightIcon className="ml-2 size-5 transition-transform group-hover:translate-x-1" />
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      {/* Footer */}
+      <footer className="relative z-10 py-12 border-t border-border bg-background/80">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="mb-6 md:mb-0">
+              <div className="font-bold text-xl flex items-center">
+                <span className="text-primary mr-2">AI</span>
+                <span>Fitness</span>
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">
+                Powered by advanced artificial intelligence
+              </p>
+            </div>
+            
+            <div className="flex flex-col md:flex-row gap-8">
+              <div className="space-y-2">
+                <div className="font-medium">Platform</div>
+                <div className="text-sm text-muted-foreground hover:text-primary cursor-pointer">How It Works</div>
+                <div className="text-sm text-muted-foreground hover:text-primary cursor-pointer">Pricing</div>
+                <div className="text-sm text-muted-foreground hover:text-primary cursor-pointer">Testimonials</div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="font-medium">Company</div>
+                <div className="text-sm text-muted-foreground hover:text-primary cursor-pointer">About</div>
+                <div className="text-sm text-muted-foreground hover:text-primary cursor-pointer">Blog</div>
+                <div className="text-sm text-muted-foreground hover:text-primary cursor-pointer">Contact</div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="font-medium">Legal</div>
+                <div className="text-sm text-muted-foreground hover:text-primary cursor-pointer">Privacy</div>
+                <div className="text-sm text-muted-foreground hover:text-primary cursor-pointer">Terms</div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="border-t border-border mt-8 pt-8 text-center text-sm text-muted-foreground">
+            © {new Date().getFullYear()} AI Fitness. All rights reserved.
+          </div>
+        </div>
+      </footer>
+      
+      {/* Add this to your global CSS for the vertical scan animation */}
+      <style jsx global>{`
+        @keyframes scan-vertical {
+          0% { transform: translateY(-100%); }
+          100% { transform: translateY(200%); }
+        }
+        .animate-scan-vertical {
+          animation: scan-vertical 3s linear infinite;
+        }
+      `}</style>
     </div>
   );
 };
+
 export default HomePage;
