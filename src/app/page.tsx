@@ -292,47 +292,6 @@ const HomePage = () => {
       </section>
       
       {/* Footer */}
-      <footer className="relative z-10 py-12 border-t border-border bg-background/80">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="mb-6 md:mb-0">
-              <div className="font-bold text-xl flex items-center">
-                <span className="text-primary mr-2">AI</span>
-                <span>Fitness</span>
-              </div>
-              <p className="text-sm text-muted-foreground mt-2">
-                Powered by advanced artificial intelligence
-              </p>
-            </div>
-            
-            <div className="flex flex-col md:flex-row gap-8">
-              <div className="space-y-2">
-                <div className="font-medium">Platform</div>
-                <div className="text-sm text-muted-foreground hover:text-primary cursor-pointer">How It Works</div>
-                <div className="text-sm text-muted-foreground hover:text-primary cursor-pointer">Pricing</div>
-                <div className="text-sm text-muted-foreground hover:text-primary cursor-pointer">Testimonials</div>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="font-medium">Company</div>
-                <div className="text-sm text-muted-foreground hover:text-primary cursor-pointer">About</div>
-                <div className="text-sm text-muted-foreground hover:text-primary cursor-pointer">Blog</div>
-                <div className="text-sm text-muted-foreground hover:text-primary cursor-pointer">Contact</div>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="font-medium">Legal</div>
-                <div className="text-sm text-muted-foreground hover:text-primary cursor-pointer">Privacy</div>
-                <div className="text-sm text-muted-foreground hover:text-primary cursor-pointer">Terms</div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="border-t border-border mt-8 pt-8 text-center text-sm text-muted-foreground">
-            © {new Date().getFullYear()} AI Fitness. All rights reserved.
-          </div>
-        </div>
-      </footer>
       
       {/* Add this to your global CSS for the vertical scan animation */}
       <style jsx global>{`
