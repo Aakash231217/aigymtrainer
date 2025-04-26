@@ -11,7 +11,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // Define your static routes
   const staticRoutes = [
     '/',
-    ''.
+    '',
     '/generate-program',
     '/profile',
     // Add all your static routes
