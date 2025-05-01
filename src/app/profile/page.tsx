@@ -107,7 +107,7 @@ const ProfilePage = () => {
     if (currentPlan) {
       updateIncompleteItems();
     }
-  }, [completedExercises, completedMeals, currentPlan, updateIncompleteItems]);
+  }, [completedExercises, completedMeals, currentPlan]);
   
   // Handle checking/unchecking exercises
   const toggleExerciseComplete = (dayName: string, routineIndex: number) => {
