@@ -13,7 +13,7 @@ import CornerElements from "@/components/CornerElements";
 
 // Environment variables would be used in a real implementation
 const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
 interface NutritionInfo {
   name: string;
@@ -128,6 +128,8 @@ const FoodScanner = () => {
 
   const analyzeImage = async () => {
     if (!capturedImage) return;
+    
+    // Check for API key first
     if (!GEMINI_API_KEY) {
       setError("API key not configured. Please set NEXT_PUBLIC_GEMINI_API_KEY in your environment.");
       return;
@@ -143,70 +145,129 @@ const FoodScanner = () => {
       
       // Convert blob to base64
       const reader = new FileReader();
-      reader.readAsDataURL(blob);
       
-      reader.onloadend = async () => {
-        const base64data = reader.result?.toString().split(',')[1];
-        
-        if (!base64data) {
-          throw new Error("Failed to convert image");
-        }
-        
-        // Prepare request to Google Gemini API
-        const requestData = {
-          contents: [
-            {
-              parts: [
-                {
-                  text: "Please analyze this food image and provide detailed nutritional information. Return the data in this exact JSON format: {\"name\": \"Food Name\", \"calories\": number, \"protein\": number in grams, \"carbs\": number in grams, \"fat\": number in grams, \"servingSize\": \"standard serving size\", \"additionalInfo\": [\"any special notes\"]}"
-                },
-                {
-                  inline_data: {
-                    mime_type: "image/jpeg",
-                    data: base64data
-                  }
-                }
-              ]
-            }
-          ]
+      // Use Promise to handle the FileReader asynchronously
+      const base64data = await new Promise((resolve, reject) => {
+        reader.onloadend = () => {
+          const base64 = reader.result?.toString().split(',')[1];
+          if (base64) {
+            resolve(base64);
+          } else {
+            reject(new Error("Failed to convert image to base64"));
+          }
         };
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+      });
+      
+      // Prepare request to Google Gemini API
+      const requestData = {
+        contents: [
+          {
+            parts: [
+              {
+                text: "Please analyze this food image and provide detailed nutritional information. Return the data in this exact JSON format: {\"name\": \"Food Name\", \"calories\": number, \"protein\": number in grams, \"carbs\": number in grams, \"fat\": number in grams, \"servingSize\": \"standard serving size\", \"additionalInfo\": [\"any special notes\"]}"
+              },
+              {
+                inline_data: {
+                  mime_type: "image/jpeg",
+                  data: base64data
+                }
+              }
+            ]
+          }
+        ]
+      };
+      
+      // Send request to Gemini API
+      const apiResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(requestData)
+      });
+      
+      // Check for API errors and get detailed error message if possible
+      if (!apiResponse.ok) {
+        const errorData = await apiResponse.json().catch(() => null);
+        console.error("API Error Response:", errorData);
+        throw new Error(
+          `API error (${apiResponse.status}): ${errorData?.error?.message || apiResponse.statusText}`
+        );
+      }
+      
+      const apiData = await apiResponse.json();
+      console.log("API Response:", apiData); // Helpful for debugging
+      
+      // Check for missing data in the response
+      if (!apiData.candidates || !apiData.candidates[0]?.content?.parts) {
+        throw new Error("Invalid response format from API");
+      }
+      
+      const responseText = apiData.candidates[0].content.parts[0]?.text;
+      
+      if (!responseText) {
+        throw new Error("No text content in API response");
+      }
+      
+      // Log the full response text for debugging
+      console.log("Response Text:", responseText);
+      
+      // Extract JSON from response (handling different formats)
+      let nutritionData: NutritionInfo;
+      
+      try {
+        // First try finding JSON within markdown code blocks
+        const jsonMatch = responseText.match(/```(?:json)?\s*({[\s\S]*?})\s*```/) || 
+                         responseText.match(/{[\s\S]*?}/);
         
-        // Send request to Gemini API
-        const apiResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(requestData)
-        });
-        
-        if (!apiResponse.ok) {
-          throw new Error(`API error: ${apiResponse.status}`);
-        }
-        
-        const apiData = await apiResponse.json();
-        const responseText = apiData.candidates[0]?.content?.parts[0]?.text;
-        
-        if (!responseText) {
-          throw new Error("No response from API");
-        }
-        
-        // Extract JSON from response (Gemini might wrap it in markdown code blocks)
-        const jsonMatch = responseText.match(/```json\s*({[\s\S]*?})\s*```/) || 
-                          responseText.match(/{[\s\S]*?}/);
-                          
         if (!jsonMatch) {
           throw new Error("Could not extract JSON from response");
         }
         
-        // Parse the nutrition data
-        const nutritionData: NutritionInfo = JSON.parse(jsonMatch[1] || jsonMatch[0]);
-        setNutritionInfo(nutritionData);
+        const jsonString = jsonMatch[1] || jsonMatch[0];
+        console.log("Extracted JSON:", jsonString);
         
-      };
+        try {
+          // Try to parse the extracted JSON
+          nutritionData = JSON.parse(jsonString);
+        } catch (parseError) {
+          // If parsing fails, try to clean up the JSON string
+          const cleanedJson = jsonString
+            .replace(/\\n/g, ' ')
+            .replace(/\\"/g, '"')
+            .replace(/\\/g, '\\');
+          
+          nutritionData = JSON.parse(cleanedJson);
+        }
+        
+        // Validate the parsed nutrition data has required fields
+        if (!nutritionData.name || 
+            nutritionData.calories === undefined || 
+            nutritionData.protein === undefined || 
+            nutritionData.carbs === undefined || 
+            nutritionData.fat === undefined) {
+          throw new Error("Invalid nutrition data format");
+        }
+        
+        setNutritionInfo(nutritionData);
+      } catch (jsonError) {
+        console.error("JSON Parsing Error:", jsonError);
+        // As a fallback, try to extract data from the text if JSON parsing fails
+        throw new Error(
+          `Failed to parse nutrition data: ${
+            jsonError instanceof Error ? jsonError.message : String(jsonError)
+          }`
+        );
+      }
     } catch (err) {
       console.error("Error analyzing food:", err);
-      setError("Failed to analyze the food. Please try again.");
+      setError(
+        `Failed to analyze the food: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
     } finally {
       setIsAnalyzing(false);
     }
