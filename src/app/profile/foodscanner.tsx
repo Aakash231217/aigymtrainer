@@ -232,7 +232,7 @@ const FoodScanner = () => {
         try {
           // Try to parse the extracted JSON
           nutritionData = JSON.parse(jsonString);
-        } catch (parseError) {
+        } catch (jsonParseError) {
           // If parsing fails, try to clean up the JSON string
           const cleanedJson = jsonString
             .replace(/\\n/g, ' ')
