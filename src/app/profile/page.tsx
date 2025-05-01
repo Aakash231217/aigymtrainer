@@ -22,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import FoodScanner from "./foodscanner";
 
 const ProfilePage = () => {
   const { user } = useUser();
@@ -241,6 +242,8 @@ const ProfilePage = () => {
                     </span>
                   )}
                 </Button>
+                <FoodScanner />
+
                 
                 <div className="font-mono text-xs text-muted-foreground">
                   TOTAL: {allPlans.length}
