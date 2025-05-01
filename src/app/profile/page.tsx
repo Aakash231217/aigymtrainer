@@ -101,6 +101,7 @@ const ProfilePage = () => {
     });
     
     setNotifications(incompleteItems);
+    console.log(incompleteItems)
   };
   
   // Handle checking/unchecking exercises
