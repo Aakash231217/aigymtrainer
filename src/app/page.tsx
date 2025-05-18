@@ -2,13 +2,67 @@
 import TerminalOverlay from "@/components/TerminalOverlay";
 import { Button } from "@/components/ui/button";
 import UserPrograms from "@/components/UserPrograms";
-import { ArrowRightIcon, ActivityIcon, BrainIcon, DumbbellIcon } from "lucide-react";
+import { ArrowRightIcon, ActivityIcon, BrainIcon, DumbbellIcon, HeartPulseIcon } from "lucide-react";
+import SalesAgent from "@/components/SalesAgent";
 import Link from "next/link";
 
 const HomePage = () => {
   return (
     <div className="flex flex-col min-h-screen text-foreground overflow-hidden bg-gradient-to-b from-background to-background/95">
       {/* Animated background elements */}
+      
+    <style jsx global>{`
+      @keyframes fysBadgeTextShimmer-fys-badge-6817bdb4215068749ede38aa-1746386377862 {
+        0% { opacity: 0.7; }
+        50% { opacity: 1; }
+        100% { opacity: 0.7; }
+      }
+
+      #fys-badge-6817bdb4215068749ede38aa-1746386377862:hover .fys-badge-inner {
+         transform: translateY(-1px);
+         box-shadow: 0 6px 10px -2px rgba(0, 0, 0, 0.2), 0 3px 6px -2px rgba(0, 0, 0, 0.2);
+      }
+    `}</style>
+    <a
+      id="fys-badge-6817bdb4215068749ede38aa-1746386377862"
+      href="https://findyoursaas.com/tool/6817bdb4215068749ede38aa/athonix"
+      target="_blank"
+      style={{
+        textDecoration: "none",
+        display: "inline-block",
+        color: "inherit"
+      }}
+    >
+      <div
+        className="fys-badge-inner"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          backgroundColor: "#374151",
+          border: "1px solid #4B5563",
+          borderRadius: "6px",
+          padding: "6px 10px",
+          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+          boxShadow: "0 2px 4px -1px rgba(0, 0, 0, 0.2)",
+          transition: "transform 0.2s ease, box-shadow 0.2s ease",
+          lineHeight: 1,
+        }}
+      >
+        <img src="https://findyoursaas.com/logo.png"
+             alt="FYS Logo"
+             style={{
+               width: "18px",
+               height: "18px",
+               borderRadius: "50%",
+               marginRight: "6px",
+               display: "block"
+             }}/>
+        <span style={{ fontSize: "12px", fontWeight: 500, color: "#F3F4F6", whiteSpace: "nowrap" }}>
+          Featured on FYS
+        </span>
+      </div>
+    </a>
+  
       <div className="fixed inset-0 z-0">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-secondary/5 rounded-full blur-3xl" />
@@ -238,7 +292,36 @@ const HomePage = () => {
                 your taste preferences and lifestyle
               </p>
             </div>
+
+            {/* Feature 4 - AI Sales Assistant */}
+            <div className="bg-background/50 backdrop-blur-sm p-8 rounded-lg border border-border relative group hover:border-primary/50 transition-colors">
+              <div className="absolute -inset-px bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute top-0 right-0 w-16 h-16 border-r-2 border-t-2 border-primary/30 rounded-tr-lg" />
+              
+              <div className="size-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-6">
+                <HeartPulseIcon className="size-6" />
+              </div>
+              <h3 className="text-xl font-bold mb-3">Personal Consultant</h3>
+              <p className="text-muted-foreground">
+                Chat with our AI fitness consultant to discover the perfect program for your goals
+                and get personalized recommendations
+              </p>
+            </div>
           </div>
+        </div>
+      </section>
+
+      {/* Sales Agent Section */}
+      <section className="relative z-10 py-12">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Your Fitness <span className="text-primary">Consultant</span></h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Chat with our AI consultant to discover the perfect fitness program for your goals.
+              Get personalized recommendations and start your transformation journey today.
+            </p>
+          </div>
+          <SalesAgent />
         </div>
       </section>
 
