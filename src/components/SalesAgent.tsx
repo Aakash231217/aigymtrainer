@@ -51,7 +51,7 @@ const SalesAgent = () => {
       } catch (error) {
         console.error('Error loading welcome message:', error);
         setMessages([{
-          text: "Welcome to Athonix! 👋 I'm your personal fitness consultant. How can I help you today?",
+          text: "Welcome to Athonix! 👋 I'm your personal fitness assistant. How can I help you today?",
           isUser: false,
           timestamp: new Date()
         }]);
@@ -191,7 +191,7 @@ const SalesAgent = () => {
       {/* Header */}
       <div className="p-4 border-b border-border flex justify-between items-center bg-primary/5">
         <div>
-          <h2 className="text-xl font-semibold">Athonix Sales Consultant</h2>
+          <h2 className="text-xl font-semibold">Athonix Fitness Assistant</h2>
           <p className="text-sm text-muted-foreground">Your path to personalized fitness</p>
         </div>
         <div className="flex items-center gap-2">

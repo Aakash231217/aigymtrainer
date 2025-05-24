@@ -5,6 +5,7 @@ import UserPrograms from "@/components/UserPrograms";
 import { ArrowRightIcon, ActivityIcon, BrainIcon, DumbbellIcon, HeartPulseIcon } from "lucide-react";
 import SalesAgent from "@/components/SalesAgent";
 import Link from "next/link";
+import Image from "next/image";
 
 const HomePage = () => {
   return (
@@ -251,9 +252,9 @@ const HomePage = () => {
               <div className="size-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-6">
                 <HeartPulseIcon className="size-6" />
               </div>
-              <h3 className="text-xl font-bold mb-3">Personal Consultant</h3>
+              <h3 className="text-xl font-bold mb-3">Personalized Fitness Plans</h3>
               <p className="text-muted-foreground">
-                Chat with our AI fitness consultant to discover the perfect program for your goals
+                Chat with our AI fitness assistant to discover the perfect program for your goals
                 and get personalized recommendations
               </p>
             </div>
@@ -265,13 +266,27 @@ const HomePage = () => {
       <section className="relative z-10 py-12">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Your Fitness <span className="text-primary">Consultant</span></h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Your Fitness <span className="text-primary">Assistant</span></h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Chat with our AI consultant to discover the perfect fitness program for your goals.
+              Chat with our AI assistant to discover the perfect fitness program for your goals.
               Get personalized recommendations and start your transformation journey today.
             </p>
+            <div className="mt-8 max-w-md mx-auto">
+              <div className="flex flex-col items-center bg-card rounded-lg p-4 shadow-md border border-border/30">
+                <Image 
+                  src="/image.png" 
+                  width={280} 
+                  height={280} 
+                  alt="Oxford nutritionists OHSC Certification" 
+                  className="object-contain mb-3" 
+                />
+                <div className="text-center">
+                  <p className="text-lg font-semibold text-primary">Certified by Oxford nutritionists OHSC</p>
+                  <p className="text-sm text-muted-foreground mt-1">All workout plans and nutrition advice follow OHSC guidelines</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <SalesAgent />
         </div>
       </section>
 
