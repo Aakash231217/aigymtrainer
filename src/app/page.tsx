@@ -78,13 +78,13 @@ const HomePage = () => {
               {/* STATS */}
               <div className="flex flex-wrap items-center gap-10 py-6 font-mono">
                 <div className="flex flex-col group">
-                  <div className="text-3xl text-primary transition-transform hover:scale-110">500+</div>
+                  <div className="text-3xl text-primary transition-transform hover:scale-110">2000+</div>
                   <div className="text-xs uppercase tracking-wider mt-1">ACTIVE USERS</div>
                 </div>
                 <div className="h-12 w-px bg-gradient-to-b from-transparent via-border to-transparent"></div>
                 <div className="flex flex-col group">
-                  <div className="text-3xl text-primary transition-transform hover:scale-110">3min</div>
-                  <div className="text-xs uppercase tracking-wider mt-1">GENERATION</div>
+                  <div className="text-3xl text-primary transition-transform hover:scale-110">2min/user</div>
+                  <div className="text-xs uppercase tracking-wider mt-1">Creation Time</div>
                 </div>
                 <div className="h-12 w-px bg-gradient-to-b from-transparent via-border to-transparent"></div>
                 <div className="flex flex-col group">
