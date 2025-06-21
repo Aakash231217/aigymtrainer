@@ -1,7 +1,7 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useState, useEffect, SetStateAction } from "react";
 import ProfileHeader from "@/components/ProfileHeader";
@@ -31,6 +31,10 @@ const ProfilePage = () => {
   const allPlans = useQuery(api.plans.getUserPlans, { userId });
   const [selectedPlanId, setSelectedPlanId] = useState<null | string>(null);
   
+  // Convex mutations for saving progress
+  const saveProgress = useMutation(api.progress.saveProgress);
+  const getProgress = useQuery(api.progress.getProgress, currentPlan?._id && userId ? { planId: currentPlan._id, userId } : undefined);
+
   // Track completed exercises and meals
   const [completedExercises, setCompletedExercises] = useState<Record<string, boolean>>({});
   const [completedMeals, setCompletedMeals] = useState<Record<string, boolean>>({});
@@ -83,25 +87,32 @@ const ProfilePage = () => {
     setIncompleteItems(items);
   };
   
-  // Load saved progress from localStorage on component mount
+  // Load saved progress from backend (Convex) or localStorage on component mount
   useEffect(() => {
-    if (currentPlan?._id) {
-      try {
-        const savedExercises = localStorage.getItem(`exercises-${currentPlan._id}`);
-        const savedMeals = localStorage.getItem(`meals-${currentPlan._id}`);
-        
-        if (savedExercises) {
-          setCompletedExercises(JSON.parse(savedExercises));
+    if (currentPlan?._id && userId) {
+      if (getProgress) {
+        // If backend data exists, use it
+        if (getProgress.completedExercises) {
+          setCompletedExercises(getProgress.completedExercises);
+        } else {
+          // fallback to localStorage
+          const savedExercises = localStorage.getItem(`exercises-${currentPlan._id}`);
+          if (savedExercises) {
+            setCompletedExercises(JSON.parse(savedExercises));
+          }
         }
-        
-        if (savedMeals) {
-          setCompletedMeals(JSON.parse(savedMeals));
+        if (getProgress.completedMeals) {
+          setCompletedMeals(getProgress.completedMeals);
+        } else {
+          const savedMeals = localStorage.getItem(`meals-${currentPlan._id}`);
+          if (savedMeals) {
+            setCompletedMeals(JSON.parse(savedMeals));
+          }
         }
-      } catch (error) {
-        console.error("Error loading saved progress:", error);
       }
     }
-  }, [currentPlan]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPlan?._id, userId, getProgress]);
   
   // Update incomplete items whenever completion status changes
   useEffect(() => {
@@ -111,43 +122,55 @@ const ProfilePage = () => {
   }, [completedExercises, completedMeals, currentPlan]);
   
   // Handle checking/unchecking exercises
-  const toggleExerciseComplete = (dayName: string, routineIndex: number) => {
+  const toggleExerciseComplete = async (dayName: string, routineIndex: number) => {
     const routineId = `${dayName}-${routineIndex}`;
-    
     setCompletedExercises(prev => {
       const updated = { 
         ...prev,
         [routineId]: !prev[routineId]
       };
-      
       // Save to localStorage
       try {
         localStorage.setItem(`exercises-${currentPlan?._id}`, JSON.stringify(updated));
       } catch (error) {
         console.error("Error saving exercise progress:", error);
       }
-      
+      // Save to backend
+      if (currentPlan?._id && userId) {
+        saveProgress({
+          planId: currentPlan._id,
+          userId,
+          completedExercises: updated,
+          completedMeals
+        });
+      }
       return updated;
     });
   };
   
   // Handle checking/unchecking meals
-  const toggleMealComplete = (mealIndex: number) => {
+  const toggleMealComplete = async (mealIndex: number) => {
     const mealId = `meal-${mealIndex}`;
-    
     setCompletedMeals(prev => {
       const updated = { 
         ...prev,
         [mealId]: !prev[mealId]
       };
-      
       // Save to localStorage
       try {
         localStorage.setItem(`meals-${currentPlan?._id}`, JSON.stringify(updated));
       } catch (error) {
         console.error("Error saving meal progress:", error);
       }
-      
+      // Save to backend
+      if (currentPlan?._id && userId) {
+        saveProgress({
+          planId: currentPlan._id,
+          userId,
+          completedExercises,
+          completedMeals: updated
+        });
+      }
       return updated;
     });
   };
@@ -155,7 +178,6 @@ const ProfilePage = () => {
   // Reset today's progress
   const resetTodayProgress = () => {
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-    
     // Reset exercises for today
     const newExercises = { ...completedExercises };
     Object.keys(newExercises).forEach(key => {
@@ -163,23 +185,28 @@ const ProfilePage = () => {
         newExercises[key] = false;
       }
     });
-    
     // Reset all meals
     const newMeals = { ...completedMeals };
     Object.keys(newMeals).forEach(key => {
       newMeals[key] = false;
     });
-    
     setCompletedExercises(newExercises);
     setCompletedMeals(newMeals);
-    
     try {
       localStorage.setItem(`exercises-${currentPlan?._id}`, JSON.stringify(newExercises));
       localStorage.setItem(`meals-${currentPlan?._id}`, JSON.stringify(newMeals));
     } catch (error) {
       console.error("Error resetting progress:", error);
     }
-    
+    // Save to backend
+    if (currentPlan?._id && userId) {
+      saveProgress({
+        planId: currentPlan._id,
+        userId,
+        completedExercises: newExercises,
+        completedMeals: newMeals
+      });
+    }
     setShowNotificationDialog(false);
   };
 
@@ -402,7 +429,7 @@ const ProfilePage = () => {
                                     >
                                       <div className="flex-grow">
                                         <div className="flex justify-between items-start mb-2">
-                                          <h4 className={`font-semibold ${isCompleted ? 'text-green-500' : 'text-foreground'}`}>
+                                          <h4 className={`font-semibold ${isCompleted ? 'text-green-500' : 'text-foreground'}`}> 
                                             {routine.name}
                                           </h4>
                                           <div className="flex items-center gap-2">
