@@ -3,7 +3,6 @@ import TerminalOverlay from "@/components/TerminalOverlay";
 import { Button } from "@/components/ui/button";
 import UserPrograms from "@/components/UserPrograms";
 import { ArrowRightIcon, ActivityIcon, BrainIcon, DumbbellIcon, HeartPulseIcon } from "lucide-react";
-import SalesAgent from "@/components/SalesAgent";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -139,150 +138,9 @@ const HomePage = () => {
                   
                   <img
                     src="/hero-ai3.png"
-                    alt="AI Fitness Coach"
-                    className="size-full object-cover object-center"
+                    alt="AI Fitness Assistant"
+                    className="w-full h-full object-cover"
                   />
-
-                  {/* SCAN LINES */}
-                  <div className="absolute inset-0 bg-[linear-gradient(transparent_0%,transparent_calc(50%-1px),var(--cyber-glow-primary)_50%,transparent_calc(50%+1px),transparent_100%)] bg-[length:100%_8px] animate-scanline pointer-events-none z-20" />
-                  
-                  {/* Horizontal scan effect - using CSS animation instead of framer-motion */}
-                  <div
-                    className="absolute inset-0 h-20 bg-gradient-to-b from-transparent via-primary/20 to-transparent pointer-events-none z-20 animate-scan-vertical"
-                  />
-
-                  {/* DECORATIONS ON TOP THE IMAGE */}
-                  <div className="absolute inset-0 pointer-events-none z-20">
-                    <div className="absolute top-1/3 left-1/3 w-1/3 h-1/3 border border-primary/60 rounded-full animate-pulse" />
-                    
-                    {/* Targeting reticle */}
-                    <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" fill="none">
-                      <circle cx="50" cy="50" r="30" stroke="rgba(var(--primary), 0.3)" strokeWidth="0.5" />
-                      <circle cx="50" cy="50" r="20" stroke="rgba(var(--primary), 0.3)" strokeWidth="0.5" />
-                      <line x1="0" y1="50" x2="100" y2="50" stroke="rgba(var(--primary), 0.2)" strokeWidth="0.5" strokeDasharray="2 4" />
-                      <line x1="50" y1="0" x2="50" y2="100" stroke="rgba(var(--primary), 0.2)" strokeWidth="0.5" strokeDasharray="2 4" />
-                    </svg>
-
-                    {/* Data readouts */}
-                    <div className="absolute top-4 right-4 bg-background/30 backdrop-blur-sm p-2 rounded border border-primary/30 font-mono text-xs animate-pulse">
-                      <div className="text-primary">ANALYZING PHYSIQUE</div>
-                    </div>
-                    
-                    <div className="absolute bottom-4 left-4 bg-background/30 backdrop-blur-sm p-2 rounded border border-primary/30 font-mono text-xs">
-                      <div className="text-primary mb-1">BODY METRICS:</div>
-                      <div className="text-foreground/70">OPTIMIZING...</div>
-                    </div>
-                  </div>
-
-                  <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-                </div>
-
-                {/* TERMINAL OVERLAY */}
-                <TerminalOverlay />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features section */}
-      <section className="relative z-10 py-24 bg-gradient-to-b from-background/50 to-background">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <div className="inline-block px-4 py-1 bg-primary/10 rounded-full mb-4">
-              <span className="text-primary font-mono text-sm">OUR TECHNOLOGY</span>
-            </div>
-            <h2 className="text-4xl font-bold mb-4">Advanced AI-Powered <span className="text-primary">Features</span></h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Our cutting-edge technology creates truly personalized fitness experiences that adapt to your unique body and goals
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Feature 1 */}
-            <div className="bg-background/50 backdrop-blur-sm p-8 rounded-lg border border-border relative group hover:border-primary/50 transition-colors">
-              <div className="absolute -inset-px bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="absolute top-0 right-0 w-16 h-16 border-r-2 border-t-2 border-primary/30 rounded-tr-lg" />
-              
-              <div className="size-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-6">
-                <BrainIcon className="size-6" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">AI Body Analysis</h3>
-              <p className="text-muted-foreground">
-                Our AI analyzes your unique physique, metabolism, and genetic factors to create 
-                truly personalized programs that maximize results
-              </p>
-            </div>
-            
-            {/* Feature 2 */}
-            <div className="bg-background/50 backdrop-blur-sm p-8 rounded-lg border border-border relative group hover:border-primary/50 transition-colors">
-              <div className="absolute -inset-px bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="absolute top-0 right-0 w-16 h-16 border-r-2 border-t-2 border-primary/30 rounded-tr-lg" />
-              
-              <div className="size-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-6">
-                <DumbbellIcon className="size-6" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Dynamic Workouts</h3>
-              <p className="text-muted-foreground">
-                Intelligent workout plans that adapt to your progress, equipment availability, 
-                and schedule for optimal fitness gains
-              </p>
-            </div>
-            
-            {/* Feature 3 */}
-            <div className="bg-background/50 backdrop-blur-sm p-8 rounded-lg border border-border relative group hover:border-primary/50 transition-colors">
-              <div className="absolute -inset-px bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="absolute top-0 right-0 w-16 h-16 border-r-2 border-t-2 border-primary/30 rounded-tr-lg" />
-              
-              <div className="size-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-6">
-                <ActivityIcon className="size-6" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Nutrition Science</h3>
-              <p className="text-muted-foreground">
-                Precision nutrition plans based on cutting-edge dietary science that align with 
-                your taste preferences and lifestyle
-              </p>
-            </div>
-
-            {/* Feature 4 - AI Sales Assistant */}
-            <div className="bg-background/50 backdrop-blur-sm p-8 rounded-lg border border-border relative group hover:border-primary/50 transition-colors">
-              <div className="absolute -inset-px bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="absolute top-0 right-0 w-16 h-16 border-r-2 border-t-2 border-primary/30 rounded-tr-lg" />
-              
-              <div className="size-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-6">
-                <HeartPulseIcon className="size-6" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Personalized Fitness Plans</h3>
-              <p className="text-muted-foreground">
-                Chat with our AI fitness assistant to discover the perfect program for your goals
-                and get personalized recommendations
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Sales Agent Section */}
-      <section className="relative z-10 py-12">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Your Fitness <span className="text-primary">Assistant</span></h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Chat with our AI assistant to discover the perfect fitness program for your goals.
-              Get personalized recommendations and start your transformation journey today.
-            </p>
-            <div className="mt-8 max-w-md mx-auto">
-              <div className="flex flex-col items-center bg-card rounded-lg p-4 shadow-md border border-border/30">
-                <Image 
-                  src="/image.png" 
-                  width={280} 
-                  height={280} 
-                  alt="Oxford nutritionists OHSC Certification" 
-                  className="object-contain mb-3" 
-                />
-                <div className="text-center">
-                  <p className="text-lg font-semibold text-primary">Certified by Oxford nutritionists OHSC</p>
-                  <p className="text-sm text-muted-foreground mt-1">All workout plans and nutrition advice follow OHSC guidelines</p>
                 </div>
               </div>
             </div>
@@ -290,67 +148,11 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* User Programs with enhanced styling */}
-      <div className="relative z-10">
-        <UserPrograms />
-      </div>
+      {/* Terminal Overlay */}
+      <TerminalOverlay />
       
-      {/* Call to action */}
-      <section className="relative z-10 py-24 overflow-hidden">
-        <div className="container mx-auto px-4">
-          <div className="relative rounded-xl bg-gradient-to-br from-background to-background/80 border border-primary/20 p-12 overflow-hidden">
-            {/* Background effects */}
-            <div className="absolute inset-0 overflow-hidden">
-              <div className="absolute -top-20 -right-20 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
-              <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-secondary/10 rounded-full blur-3xl" />
-              
-              {/* Grid pattern */}
-              <div className="absolute inset-0 bg-[linear-gradient(0deg,transparent_24px,var(--border)_25px),linear-gradient(90deg,transparent_24px,var(--border)_25px)] bg-[size:25px_25px] opacity-[0.02]" />
-            </div>
-            
-            <div className="relative flex flex-col md:flex-row items-center justify-between gap-8">
-              <div className="max-w-2xl">
-                <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to transform your <span className="text-primary">fitness journey</span>?</h2>
-                <p className="text-muted-foreground mb-6">
-                  Join thousands of satisfied users who have achieved their fitness goals with our
-                  AI-powered personalized programs.
-                </p>
-                
-                {/* Social proof */}
-
-                  <p className="text-sm text-muted-foreground">
-                    <span className="font-medium text-foreground">110+ users</span> activated their program this week
-                  </p>
-            
-              </div>
-              
-              <Button
-                size="lg"
-                asChild
-                className="overflow-hidden bg-gradient-to-r from-primary to-secondary text-primary-foreground px-8 py-7 text-lg font-medium group whitespace-nowrap"
-              >
-                <Link href={"/generate-program"} className="flex items-center font-mono">
-                  Start Now
-                  <ArrowRightIcon className="ml-2 size-5 transition-transform group-hover:translate-x-1" />
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-      
-      {/* Footer */}
-      
-      {/* Add this to your global CSS for the vertical scan animation */}
-      <style jsx global>{`
-        @keyframes scan-vertical {
-          0% { transform: translateY(-100%); }
-          100% { transform: translateY(200%); }
-        }
-        .animate-scan-vertical {
-          animation: scan-vertical 3s linear infinite;
-        }
-      `}</style>
+      {/* User Programs Section */}
+      <UserPrograms />
     </div>
   );
 };
