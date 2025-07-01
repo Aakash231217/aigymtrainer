@@ -19,6 +19,48 @@ const GenerateProgramPage = () => {
 
   const messageContainerRef = useRef<HTMLDivElement>(null);
 
+  // Storage utility functions
+  const saveMessagesToStorage = (messages: any[]) => {
+    try {
+      localStorage.setItem('salesgent-messages', JSON.stringify(messages));
+    } catch (error) {
+      console.error('Failed to save messages to localStorage:', error);
+    }
+  };
+
+  const loadMessagesFromStorage = () => {
+    try {
+      const stored = localStorage.getItem('salesgent-messages');
+      return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+      console.error('Failed to load messages from localStorage:', error);
+      return [];
+    }
+  };
+
+  const clearStoredMessages = () => {
+    try {
+      localStorage.removeItem('salesgent-messages');
+    } catch (error) {
+      console.error('Failed to clear messages from localStorage:', error);
+    }
+  };
+
+  // Load persisted messages on component mount
+  useEffect(() => {
+    const persistedMessages = loadMessagesFromStorage();
+    if (persistedMessages.length > 0) {
+      setMessages(persistedMessages);
+    }
+  }, []);
+
+  // Save messages to localStorage whenever messages change
+  useEffect(() => {
+    if (messages.length > 0) {
+      saveMessagesToStorage(messages);
+    }
+  }, [messages]);
+
   // SOLUTION to get rid of "Meeting has ended" error
   useEffect(() => {
     const originalError = console.error;
@@ -125,7 +167,9 @@ const GenerateProgramPage = () => {
     else {
       try {
         setConnecting(true);
+        // Clear stored messages when starting a new call
         setMessages([]);
+        clearStoredMessages();
         setCallEnded(false);
 
         const fullName = user?.firstName
@@ -236,89 +280,117 @@ const GenerateProgramPage = () => {
 
           {/* USER CARD */}
           <Card className={`bg-card/90 backdrop-blur-sm border overflow-hidden relative`}>
-            <div className="aspect-video flex flex-col items-center justify-center p-6 relative">
-              {/* User Image */}
+            <div className="aspect-video flex flex-col items-center justify-center p-6">
+              {/* USER IMAGE */}
               <div className="relative size-32 mb-4">
-                <img
-                  src={user?.imageUrl}
-                  alt="User"
-                  // ADD THIS "size-full" class to make it rounded on all images
-                  className="size-full object-cover rounded-full"
-                />
+                <div className="relative w-full h-full rounded-full bg-card flex items-center justify-center border border-border overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-b from-secondary/10 to-primary/10"></div>
+                  {user?.imageUrl ? (
+                    <img
+                      src={user.imageUrl}
+                      alt="User"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                      <span className="text-2xl font-bold text-muted-foreground">
+                        {user?.firstName?.[0] || "U"}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <h2 className="text-xl font-bold text-foreground">You</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                {user ? (user.firstName + " " + (user.lastName || "")).trim() : "Guest"}
-              </p>
+              <h2 className="text-xl font-bold text-foreground">
+                {user?.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : "User"}
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">Fitness Enthusiast</p>
 
-              {/* User Ready Text */}
-              <div className={`mt-4 flex items-center gap-2 px-3 py-1 rounded-full bg-card border`}>
-                <div className={`w-2 h-2 rounded-full bg-muted`} />
-                <span className="text-xs text-muted-foreground">Ready</span>
+              {/* MIC INDICATOR */}
+              <div
+                className={`mt-4 flex items-center gap-2 px-3 py-1 rounded-full bg-card border border-border ${
+                  callActive && !isSpeaking ? "border-secondary" : ""
+                }`}
+              >
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    callActive && !isSpeaking ? "bg-secondary animate-pulse" : "bg-muted"
+                  }`}
+                />
+                <span className="text-xs text-muted-foreground">
+                  {callActive && !isSpeaking
+                    ? "Your turn to speak..."
+                    : callActive
+                      ? "Listening..."
+                      : "Ready"}
+                </span>
               </div>
             </div>
           </Card>
         </div>
 
-        {/* MESSAGE COINTER  */}
+        {/* MESSAGES SECTION */}
         {messages.length > 0 && (
-          <div
-            ref={messageContainerRef}
-            className="w-full bg-card/90 backdrop-blur-sm border border-border rounded-xl p-4 mb-8 h-64 overflow-y-auto transition-all duration-300 scroll-smooth"
-          >
-            <div className="space-y-3">
-              {messages.map((msg, index) => (
-                <div key={index} className="message-item animate-fadeIn">
-                  <div className="font-semibold text-xs text-muted-foreground mb-1">
-                    {msg.role === "assistant" ? "Athonix AI" : "You"}:
+          <Card className="bg-card/90 backdrop-blur-sm border border-border mb-6">
+            <div className="p-4">
+              <h3 className="text-lg font-semibold mb-4 text-foreground">Conversation</h3>
+              <div
+                ref={messageContainerRef}
+                className="max-h-60 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
+              >
+                {messages.map((message, index) => (
+                  <div
+                    key={index}
+                    className={`flex ${
+                      message.role === "user" ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    <div
+                      className={`max-w-[80%] px-4 py-2 rounded-lg ${
+                        message.role === "user"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      <p className="text-sm">{message.content}</p>
+                    </div>
                   </div>
-                  <p className="text-foreground">{msg.content}</p>
-                </div>
-              ))}
-
-              {callEnded && (
-                <div className="message-item animate-fadeIn">
-                  <div className="font-semibold text-xs text-primary mb-1">System:</div>
-                  <p className="text-foreground">
-                    Your fitness program has been created! Redirecting to your profile...
-                  </p>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
-          </div>
+          </Card>
         )}
 
         {/* CALL CONTROLS */}
-        <div className="w-full flex justify-center gap-4">
+        <div className="flex justify-center">
           <Button
-            className={`w-40 text-xl rounded-3xl ${
-              callActive
-                ? "bg-destructive hover:bg-destructive/90"
-                : callEnded
-                  ? "bg-green-600 hover:bg-green-700"
-                  : "bg-primary hover:bg-primary/90"
-            } text-white relative`}
             onClick={toggleCall}
-            disabled={connecting || callEnded}
+            disabled={connecting}
+            size="lg"
+            className={`px-8 py-4 text-lg font-semibold transition-all duration-200 ${
+              callActive
+                ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                : "bg-primary hover:bg-primary/90 text-primary-foreground"
+            }`}
           >
-            {connecting && (
-              <span className="absolute inset-0 rounded-full animate-ping bg-primary/50 opacity-75"></span>
-            )}
-
-            <span>
-              {callActive
+            {connecting
+              ? "Connecting..."
+              : callActive
                 ? "End Call"
-                : connecting
-                  ? "Connecting..."
-                  : callEnded
-                    ? "View Profile"
-                    : "Start Call"}
-            </span>
+                : "Start Conversation"}
           </Button>
         </div>
+
+        {callEnded && (
+          <div className="text-center mt-6">
+            <p className="text-muted-foreground">
+              Great job! Redirecting you to your profile to view your new fitness program...
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
 };
+
 export default GenerateProgramPage;
