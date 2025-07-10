@@ -322,8 +322,3 @@ const GenerateProgramPage = () => {
   );
 };
 export default GenerateProgramPage;
-    </div>
-  );
-};
-
-export default GenerateProgramPage;
