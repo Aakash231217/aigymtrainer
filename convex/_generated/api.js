@@ -8,7 +8,7 @@
  * @module
  */
 
-import { anyApi } from "convex/server";
+import { anyApi } from "convex/react";
 
 /**
  * A utility for referencing Convex functions in your app's API.
