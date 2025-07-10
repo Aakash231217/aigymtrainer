@@ -3,7 +3,6 @@ import TerminalOverlay from "@/components/TerminalOverlay";
 import { Button } from "@/components/ui/button";
 import UserPrograms from "@/components/UserPrograms";
 import { ArrowRightIcon, ActivityIcon, BrainIcon, DumbbellIcon, HeartPulseIcon } from "lucide-react";
-import SalesAgent from "@/components/SalesAgent";
 import Link from "next/link";
 import Image from "next/image";
 
