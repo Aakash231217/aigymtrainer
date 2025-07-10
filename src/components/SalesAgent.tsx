@@ -24,7 +24,8 @@ const SalesAgent = () => {
 
   // Initialize messages from localStorage
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    const isClient = typeof window !== 'undefined';
+if (isClient) {
       const saved = localStorage.getItem('athonix_chat_history');
       if (saved) {
         try {
