@@ -3,7 +3,8 @@
 import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { useState, useEffect, SetStateAction } from "react";
+// FIX: Removed 'SetStateAction' from this import
+import { useState, useEffect, useCallback } from "react"; 
 import ProfileHeader from "@/components/ProfileHeader";
 import NoFitnessPlan from "@/components/NoFitnessPlan";
 import CornerElements from "@/components/CornerElements";
@@ -24,11 +25,25 @@ import {
 } from "@/components/ui/dialog";
 import FoodScanner from "./foodscanner";
 
-const ProfilePage = () => {
-  const { user } = useUser();
-  const userId = user?.id as string;
+// FIX #12 (Bug #12): Define a proper type for incomplete items
+type IncompleteItem = {
+  id: string;
+  type: string;
+  name: string;
+};
 
-  const allPlans = useQuery(api.plans.getUserPlans, { userId });
+const ProfilePage = () => {
+  const { user, isLoaded } = useUser(); // Use isLoaded hook
+  
+  // FIX #11 (Bug #11): Get userId only when user is loaded
+  const userId = user?.id;
+
+  // FIX #11 (Bug #11): Disable the query if userId is not yet available
+  const allPlans = useQuery(
+    api.plans.getUserPlans,
+    userId ? { userId } : "skip" // Use "skip" to disable query
+  );
+  
   const [selectedPlanId, setSelectedPlanId] = useState<null | string>(null);
   
   // Track completed exercises and meals
@@ -36,7 +51,7 @@ const ProfilePage = () => {
   const [completedMeals, setCompletedMeals] = useState<Record<string, boolean>>({});
   
   // For notifications
-  const [incompleteItems, setIncompleteItems] = useState<Array<{id: string, type: string, name: string}>>([]);
+  const [incompleteItems, setIncompleteItems] = useState<IncompleteItem[]>([]); // Use correct type
   const [showNotificationDialog, setShowNotificationDialog] = useState(false);
 
   const activePlan = allPlans?.find((plan) => plan.isActive);
@@ -46,10 +61,11 @@ const ProfilePage = () => {
     : activePlan;
     
   // Update list of incomplete items
-  const updateIncompleteItems = () => {
+  const updateIncompleteItems = useCallback(() => {
     if (!currentPlan) return;
     
-    const items: SetStateAction<{ id: string; type: string; name: string; }[]> = [];
+    // FIX #12 (Bug #12): Use the correct IncompleteItem[] type
+    const items: IncompleteItem[] = [];
     
     // Check exercises
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
@@ -81,7 +97,7 @@ const ProfilePage = () => {
     });
     
     setIncompleteItems(items);
-  };
+  }, [currentPlan, completedExercises, completedMeals]);
   
   // Load saved progress from localStorage on component mount
   useEffect(() => {
@@ -108,7 +124,7 @@ const ProfilePage = () => {
     if (currentPlan) {
       updateIncompleteItems();
     }
-  }, [completedExercises, completedMeals, currentPlan]);
+  }, [completedExercises, completedMeals, currentPlan, updateIncompleteItems]);
   
   // Handle checking/unchecking exercises
   const toggleExerciseComplete = (dayName: string, routineIndex: number) => {
@@ -122,7 +138,9 @@ const ProfilePage = () => {
       
       // Save to localStorage
       try {
-        localStorage.setItem(`exercises-${currentPlan?._id}`, JSON.stringify(updated));
+        if (currentPlan?._id) {
+          localStorage.setItem(`exercises-${currentPlan._id}`, JSON.stringify(updated));
+        }
       } catch (error) {
         console.error("Error saving exercise progress:", error);
       }
@@ -143,7 +161,9 @@ const ProfilePage = () => {
       
       // Save to localStorage
       try {
-        localStorage.setItem(`meals-${currentPlan?._id}`, JSON.stringify(updated));
+        if (currentPlan?._id) {
+          localStorage.setItem(`meals-${currentPlan._id}`, JSON.stringify(updated));
+        }
       } catch (error) {
         console.error("Error saving meal progress:", error);
       }
@@ -174,8 +194,10 @@ const ProfilePage = () => {
     setCompletedMeals(newMeals);
     
     try {
-      localStorage.setItem(`exercises-${currentPlan?._id}`, JSON.stringify(newExercises));
-      localStorage.setItem(`meals-${currentPlan?._id}`, JSON.stringify(newMeals));
+      if (currentPlan?._id) {
+        localStorage.setItem(`exercises-${currentPlan._id}`, JSON.stringify(newExercises));
+        localStorage.setItem(`meals-${currentPlan._id}`, JSON.stringify(newMeals));
+      }
     } catch (error) {
       console.error("Error resetting progress:", error);
     }
@@ -213,11 +235,21 @@ const ProfilePage = () => {
     return totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
   };
 
+  // FIX #11 (Bug #11): Show a loading state while user/plans are loading
+  if (!isLoaded || allPlans === undefined) {
+    // You can replace this with a proper loading spinner component
+    return (
+      <section className="relative z-10 pt-12 pb-32 flex-grow container mx-auto px-4">
+         {/* You can put a loading spinner component here */}
+      </section>
+    );
+  }
+
   return (
     <section className="relative z-10 pt-12 pb-32 flex-grow container mx-auto px-4">
       <ProfileHeader user={user} />
 
-      {allPlans && allPlans?.length > 0 ? (
+      {allPlans && allPlans.length > 0 ? (
         <div className="space-y-8">
           {/* PLAN SELECTOR */}
           <div className="relative backdrop-blur-sm border border-border p-6">
@@ -390,6 +422,9 @@ const ProfilePage = () => {
                             <AccordionContent className="pb-4 px-4">
                               <div className="space-y-3 mt-2">
                                 {exerciseDay.routines.map((routine, routineIndex) => {
+                                  //
+                                  // THIS IS THE FIX: Changed `dayName` to `exerciseDay.day`
+                                  //
                                   const routineId = `${exerciseDay.day}-${routineIndex}`;
                                   const isCompleted = completedExercises[routineId];
                                   
@@ -509,6 +544,7 @@ const ProfilePage = () => {
           )}
         </div>
       ) : (
+        // FIX #11 (Bug #11): Show NoFitnessPlan only if loading is finished and there are no plans
         <NoFitnessPlan />
       )}
     </section>

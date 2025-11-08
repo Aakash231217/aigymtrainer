@@ -1,80 +1,166 @@
+"use client";
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Send, ArrowRight } from "lucide-react";
 import Link from 'next/link';
-import { getSalesResponse } from '@/lib/gemini';
+//
+// NEW BUG FIX: Import useAction from convex/react and the new api
+//
+import { useAction } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
 
+
+// FIX #8 (Bug #8): Define a strong type for Message instead of 'any'
 interface Message {
   text: string;
   isUser: boolean;
-  timestamp: Date;
+  timestamp: Date; // Keep Date object for sorting, can be stringified for storage
+  isTyping?: boolean;
+  action?: 'generate_plan' | 'learn_more';
+}
+
+// FIX #8 (Bug #8): Define a type for the saved message format
+interface SavedMessage {
+  text: string;
+  isUser: boolean;
+  timestamp: string; // Store as ISO string
   isTyping?: boolean;
   action?: 'generate_plan' | 'learn_more';
 }
 
 const SalesAgent = () => {
+  //
+  // NEW BUG FIX: Get the server action from Convex
+  //
+  const getSalesResponse = useAction(api.chat.getSalesResponse);
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [isSpeaking, setIsSpeaking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const speechSynthesis = typeof window !== 'undefined' ? window.speechSynthesis : null;
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+
+  //
+  // BUG FIX: Ref to track if component is mounted
+  //
+  const isMounted = useRef(true);
 
   // Initialize messages from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('athonix_chat_history');
-    if (saved) {
-      setMessages(JSON.parse(saved));
+    try {
+      const saved = localStorage.getItem('athonix_chat_history');
+      if (saved) {
+        // FIX #8 (Bug #8): Safely parse and validate the saved messages
+        const parsed: SavedMessage[] = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // Convert timestamp strings back to Date objects
+          const loadedMessages = parsed.map(msg => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp),
+          }));
+          setMessages(loadedMessages);
+        }
+      }
+    } catch (err) {
+      // FIX #15 (Bug #15): Use console.error for actual errors
+      console.error('Failed to load saved chat history:', err);
+      // If parsing fails, clear the saved value to avoid repeated errors
+      try {
+        localStorage.removeItem('athonix_chat_history');
+      } catch {
+        // ignore
+      }
     }
   }, []);
 
   // Save messages to localStorage whenever they change
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('athonix_chat_history', JSON.stringify(messages));
+    if (typeof window !== 'undefined' && messages.length > 0) {
+      // FIX #8 (Bug #8): Convert Date objects to strings for safe JSON storage
+      const messagesToSave: SavedMessage[] = messages.map(msg => ({
+        ...msg,
+        timestamp: msg.timestamp.toISOString(),
+      }));
+      localStorage.setItem('athonix_chat_history', JSON.stringify(messagesToSave));
     }
   }, [messages]);
 
   // Load initial welcome message if no history exists
   useEffect(() => {
+    //
+    // BUG FIX: Set mounted ref to true
+    //
+    isMounted.current = true;
+
     if (messages.length === 0) {
       const loadWelcomeMessage = async () => {
       try {
-        const response = await getSalesResponse("Send a warm welcome message");
-        setMessages([{
-          text: response.text.replace(/^json\s*\{.*?\}\s*$/i, ''), // Remove any JSON wrapper
-          isUser: false,
-          timestamp: new Date()
-        }]);
+        //
+        // NEW BUG FIX: Call the real server action
+        //
+        const response = await getSalesResponse({ prompt: "Send a warm welcome message" });
+        
+        //
+        // BUG FIX: Check if component is still mounted before setting state
+        //
+        if (isMounted.current) {
+          // FIX #5 (Bug #5): Removed brittle regex
+          setMessages([{
+            text: response.text, 
+            isUser: false,
+            timestamp: new Date()
+          }]);
+        }
       } catch (error) {
+        // FIX #15 (Bug #15): Use console.error
         console.error('Error loading welcome message:', error);
-        setMessages([{
-          text: "Welcome to Athonix! 👋 I'm your personal fitness assistant. How can I help you today?",
-          isUser: false,
-          timestamp: new Date()
-        }]);
+        
+        //
+        // BUG FIX: Check if component is still mounted before setting state
+        //
+        if (isMounted.current) {
+          setMessages([{
+            text: "Welcome to Athonix! 👋 I'm your personal fitness assistant. How can I help you today?",
+            isUser: false,
+            timestamp: new Date()
+          }]);
+        }
       }
       };
       loadWelcomeMessage();
     }
-  }, [messages.length]);
+    
+    //
+    // BUG FIX: Cleanup function to set mounted ref to false
+    //
+    return () => {
+      isMounted.current = false;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on init when messages are empty
 
   // Initialize speech synthesis
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      speechSynthesis?.addEventListener('voiceschanged', () => {
-        setVoices(speechSynthesis?.getVoices() ?? []);
-      });
+      const ss = window.speechSynthesis;
+      const onVoicesChanged = () => setVoices(ss?.getVoices() ?? []);
+      ss?.addEventListener('voiceschanged', onVoicesChanged);
       // Initialize voices
-      setVoices(speechSynthesis?.getVoices() ?? []);
+      setVoices(ss?.getVoices() ?? []);
+
+      return () => {
+        ss?.cancel();
+        try {
+          ss?.removeEventListener('voiceschanged', onVoicesChanged);
+        } catch {
+          // ignore
+        }
+      };
     }
-    return () => {
-      if (typeof window !== 'undefined') {
-        speechSynthesis?.cancel();
-      }
-    };
+    // nothing to clean up on server
   }, []);
 
   // Auto scroll to bottom when new messages arrive
@@ -88,10 +174,12 @@ const SalesAgent = () => {
 
   // Handle sending a message
   const speak = (text: string) => {
-    if (!speechSynthesis) return;
+    if (typeof window === 'undefined') return;
+    const ss = window.speechSynthesis;
+    if (!ss) return;
 
     // Cancel any ongoing speech
-    speechSynthesis.cancel();
+    ss.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
     // Find a male voice
@@ -113,7 +201,7 @@ const SalesAgent = () => {
     utterance.onend = () => setIsSpeaking(false);
     utterance.onerror = () => setIsSpeaking(false);
 
-    speechSynthesis.speak(utterance);
+    ss.speak(utterance);
   };
 
   const handleSendMessage = async () => {
@@ -125,6 +213,7 @@ const SalesAgent = () => {
       isUser: true,
       timestamp: new Date()
     };
+    const currentInput = inputText;
     setMessages(prev => [...prev, userMessage]);
     setInputText("");
 
@@ -139,10 +228,13 @@ const SalesAgent = () => {
 
     // Get response from Gemini
     try {
-      const response = await getSalesResponse(inputText);
+      //
+      // NEW BUG FIX: Call the real server action with the user's prompt
+      //
+      const response = await getSalesResponse({ prompt: currentInput });
       
-      // Remove typing indicator and add response
-      const responseText = response.text.replace(/^json\s*\{.*?\}\s*$/i, '');
+      // FIX #5 (Bug #5): Removed brittle regex
+      const responseText = response.text;
       setMessages(prev => {
         const filtered = prev.filter(msg => !msg.isTyping);
         const newMessage: Message = {
@@ -157,6 +249,7 @@ const SalesAgent = () => {
       // Speak the response
       speak(responseText);
     } catch (error) {
+      // FIX #15 (Bug #15): Use console.error
       console.error('Error getting sales response:', error);
       setMessages(prev => {
         const filtered = prev.filter(msg => !msg.isTyping);
@@ -202,7 +295,7 @@ const SalesAgent = () => {
               onClick={() => {
                 localStorage.removeItem('athonix_chat_history');
                 setMessages([]);
-                speechSynthesis?.cancel();
+                if (typeof window !== 'undefined') window.speechSynthesis?.cancel();
               }}
             >
               Clear Chat
@@ -220,7 +313,8 @@ const SalesAgent = () => {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message, index) => (
           <div
-            key={index}
+            // FIX #8 (Bug #8): Use a more stable key than index
+            key={message.timestamp.toISOString() + index}
             className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
           >
             <div className="flex flex-col">
@@ -256,7 +350,7 @@ const SalesAgent = () => {
           <Input
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
             placeholder="Type your message..."
             className="flex-1"
           />

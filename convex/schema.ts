@@ -20,8 +20,11 @@ export default defineSchema({
           routines: v.array(
             v.object({
               name: v.string(),
-              sets: v.optional(v.number()),
-              reps: v.optional(v.number()),
+              //
+              // BUG FIX: Made sets and reps required to match mutation args
+              //
+              sets: v.number(),
+              reps: v.number(),
               duration: v.optional(v.string()),
               description: v.optional(v.string()),
               exercises: v.optional(v.array(v.string())),

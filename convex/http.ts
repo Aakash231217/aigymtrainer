@@ -4,10 +4,17 @@ import { Webhook } from "svix";
 import { api } from "./_generated/api";
 import { httpAction } from "./_generated/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { v } from "convex/values";
+import { z } from "zod"; // Using zod for robust validation
+
+// FIX #3 (Bug #3): Validate env var at startup
+const geminiApiKey = process.env.GEMINI_API_KEY;
+if (!geminiApiKey) {
+  throw new Error("Missing GEMINI_API_KEY environment variable");
+}
+const genAI = new GoogleGenerativeAI(geminiApiKey);
 
 const http = httpRouter();
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 http.route({
   path: "/clerk-webhook",
@@ -28,8 +35,8 @@ http.route({
       });
     }
 
-    const payload = await request.json();
-    const body = JSON.stringify(payload);
+    const body = await request.text();
+    const payload = JSON.parse(body);
 
     const wh = new Webhook(webhookSecret);
     let evt: WebhookEvent;
@@ -62,7 +69,8 @@ http.route({
           clerkId: id,
         });
       } catch (error) {
-        console.log("Error creating user:", error);
+        // FIX #11 (Bug #11): Replaced console.log with console.error for actual errors
+        console.error("Error creating user:", error);
         return new Response("Error creating user", { status: 500 });
       }
     }
@@ -81,7 +89,8 @@ http.route({
           image: image_url,
         });
       } catch (error) {
-        console.log("Error updating user:", error);
+        // FIX #11 (Bug #11): Replaced console.log with console.error
+        console.error("Error updating user:", error);
         return new Response("Error updating user", { status: 500 });
       }
     }
@@ -90,34 +99,45 @@ http.route({
   }),
 });
 
-// validate and fix workout plan to ensure it has proper numeric types
-function validateWorkoutPlan(plan: any) {
-  const validatedPlan = {
-    schedule: plan.schedule,
-    exercises: plan.exercises.map((exercise: any) => ({
-      day: exercise.day,
-      routines: exercise.routines.map((routine: any) => ({
-        name: routine.name,
-        sets: typeof routine.sets === "number" ? routine.sets : parseInt(routine.sets) || 1,
-        reps: typeof routine.reps === "number" ? routine.reps : parseInt(routine.reps) || 10,
-      })),
-    })),
-  };
-  return validatedPlan;
+// FIX #6 & #7 (Bugs #6, #7): Define Zod schemas for validation (replaces 'any')
+const workoutRoutineSchema = z.object({
+  name: z.string(),
+  sets: z.coerce.number().int().positive().default(1),
+  reps: z.coerce.number().int().positive().default(10),
+});
+
+const exerciseDaySchema = z.object({
+  day: z.string(),
+  routines: z.array(workoutRoutineSchema),
+});
+
+const workoutPlanSchema = z.object({
+  schedule: z.array(z.string()),
+  exercises: z.array(exerciseDaySchema),
+});
+
+const dietMealSchema = z.object({
+  name: z.string(),
+  foods: z.array(z.string()),
+});
+
+const dietPlanSchema = z.object({
+  dailyCalories: z.coerce.number().int().positive(),
+  meals: z.array(dietMealSchema),
+});
+
+
+// FIX #6 & #7 (Bugs #6, #7): Replaced 'validateWorkoutPlan' with Zod parsing.
+// This is much safer than the 'any' type and manual parsing.
+function parseWorkoutPlan(plan: unknown): z.infer<typeof workoutPlanSchema> {
+  return workoutPlanSchema.parse(plan);
 }
 
-// validate diet plan to ensure it strictly follows schema
-function validateDietPlan(plan: any) {
-  // only keep the fields we want
-  const validatedPlan = {
-    dailyCalories: plan.dailyCalories,
-    meals: plan.meals.map((meal: any) => ({
-      name: meal.name,
-      foods: meal.foods,
-    })),
-  };
-  return validatedPlan;
+// FIX #6 & #7 (Bugs #6, #7): Replaced 'validateDietPlan' with Zod parsing.
+function parseDietPlan(plan: unknown): z.infer<typeof dietPlanSchema> {
+  return dietPlanSchema.parse(plan);
 }
+
 
 http.route({
   path: "/vapi/generate-program",
@@ -138,12 +158,16 @@ http.route({
         dietary_restrictions,
       } = payload;
 
-      console.log("Payload is here:", payload);
+      // FIX #11 (Bug #11): Removed noisy console.log of the payload
+      // console.log("Payload is here:", payload);
 
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash-001",
+        //
+        // NEW BUG FIX: Replaced invalid model name
+        //
+        model: "gemini-1.5-flash-latest",
         generationConfig: {
-          temperature: 0.4, // lower temperature for more predictable outputs
+          temperature: 0.4, 
           topP: 0.9,
           responseMimeType: "application/json",
         },
@@ -195,9 +219,9 @@ http.route({
       const workoutResult = await model.generateContent(workoutPrompt);
       const workoutPlanText = workoutResult.response.text();
 
-      // VALIDATE THE INPUT COMING FROM AI
-      let workoutPlan = JSON.parse(workoutPlanText);
-      workoutPlan = validateWorkoutPlan(workoutPlan);
+      // FIX #6 (Bug #6): Use safe Zod parsing instead of 'any'
+      const workoutPlanJson = JSON.parse(workoutPlanText);
+      const workoutPlan = parseWorkoutPlan(workoutPlanJson);
 
       const dietPrompt = `You are an experienced nutrition coach creating a personalized diet plan based on:
         Age: ${age}
@@ -239,9 +263,9 @@ http.route({
       const dietResult = await model.generateContent(dietPrompt);
       const dietPlanText = dietResult.response.text();
 
-      // VALIDATE THE INPUT COMING FROM AI
-      let dietPlan = JSON.parse(dietPlanText);
-      dietPlan = validateDietPlan(dietPlan);
+      // FIX #6 (Bug #6): Use safe Zod parsing instead of 'any'
+      const dietPlanJson = JSON.parse(dietPlanText);
+      const dietPlan = parseDietPlan(dietPlanJson);
 
       // save to our DB: CONVEX
       const planId = await ctx.runMutation(api.plans.createPlan, {

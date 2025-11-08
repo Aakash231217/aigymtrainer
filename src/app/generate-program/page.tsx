@@ -14,34 +14,11 @@ const GenerateProgramPage = () => {
   const [messages, setMessages] = useState<any[]>([]);
   const [callEnded, setCallEnded] = useState(false);
 
-  const { user } = useUser();
+  // FIX #19 (Bug #19): Get 'isLoaded' to check if user is available
+  const { user, isLoaded } = useUser();
   const router = useRouter();
 
   const messageContainerRef = useRef<HTMLDivElement>(null);
-
-  // SOLUTION to get rid of "Meeting has ended" error
-  useEffect(() => {
-    const originalError = console.error;
-    // override console.error to ignore "Meeting has ended" errors
-    console.error = function (msg, ...args) {
-      if (
-        msg &&
-        (msg.includes("Meeting has ended") ||
-          (args[0] && args[0].toString().includes("Meeting has ended")))
-      ) {
-        console.log("Ignoring known error: Meeting has ended");
-        return; // don't pass to original handler
-      }
-
-      // pass all other errors to the original handler
-      return originalError.call(console, msg, ...args);
-    };
-
-    // restore original handler on unmount
-    return () => {
-      console.error = originalError;
-    };
-  }, []);
 
   // auto-scroll messages
   useEffect(() => {
@@ -64,14 +41,12 @@ const GenerateProgramPage = () => {
   // setup event listeners for vapi
   useEffect(() => {
     const handleCallStart = () => {
-      console.log("Call started");
       setConnecting(false);
       setCallActive(true);
       setCallEnded(false);
     };
 
     const handleCallEnd = () => {
-      console.log("Call ended");
       setCallActive(false);
       setConnecting(false);
       setIsSpeaking(false);
@@ -79,12 +54,10 @@ const GenerateProgramPage = () => {
     };
 
     const handleSpeechStart = () => {
-      console.log("AI started Speaking");
       setIsSpeaking(true);
     };
 
     const handleSpeechEnd = () => {
-      console.log("AI stopped Speaking");
       setIsSpeaking(false);
     };
     const handleMessage = (message: any) => {
@@ -94,56 +67,77 @@ const GenerateProgramPage = () => {
       }
     };
 
-    const handleError = (error: any) => {
-      console.log("Vapi Error", error);
+    // Remove unused error parameter from handleError to fix lint error
+    const handleError = () => {
       setConnecting(false);
       setCallActive(false);
     };
 
-    vapi
-      .on("call-start", handleCallStart)
-      .on("call-end", handleCallEnd)
-      .on("speech-start", handleSpeechStart)
-      .on("speech-end", handleSpeechEnd)
-      .on("message", handleMessage)
-      .on("error", handleError);
+    try {
+      vapi
+        .on("call-start", handleCallStart)
+        .on("call-end", handleCallEnd)
+        .on("speech-start", handleSpeechStart)
+        .on("speech-end", handleSpeechEnd)
+        .on("message", handleMessage)
+        .on("error", handleError);
+    } catch (error) {
+      console.error("Error initializing Vapi event listeners:", error);
+    }
+
 
     // cleanup event listeners on unmount
     return () => {
-      vapi
-        .off("call-start", handleCallStart)
-        .off("call-end", handleCallEnd)
-        .off("speech-start", handleSpeechStart)
-        .off("speech-end", handleSpeechEnd)
-        .off("message", handleMessage)
-        .off("error", handleError);
+      try {
+        vapi
+          .off("call-start", handleCallStart)
+          .off("call-end", handleCallEnd)
+          .off("speech-start", handleSpeechStart)
+          .off("speech-end", handleSpeechEnd)
+          .off("message", handleMessage)
+          .off("error", handleError);
+      } catch (error) {
+        console.error("Error cleaning up Vapi event listeners:", error);
+      }
     };
   }, []);
 
   const toggleCall = async () => {
-    if (callActive) vapi.stop();
-    else {
-      try {
-        setConnecting(true);
-        setMessages([]);
-        setCallEnded(false);
+    if (callActive) {
+      vapi.stop();
+      return;
+    }
 
-        const fullName = user?.firstName
-          ? `${user.firstName} ${user.lastName || ""}`.trim()
-          : "There";
+    const vapiWorkflowId = process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID;
+    if (!vapiWorkflowId) {
+      console.error("Vapi Workflow ID is not set in environment variables.");
+      setConnecting(false);
+      return;
+    }
 
-        await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
-          variableValues: {
-            full_name: fullName,
-            user_id: user?.id,
-          },
-        });
-      } catch (error) {
-        console.log("Failed to start call", error);
-        setConnecting(false);
-      }
+    try {
+      setConnecting(true);
+      setMessages([]);
+      setCallEnded(false);
+
+      const fullName = user?.firstName
+        ? `${user.firstName} ${user.lastName || ""}`.trim()
+        : "There";
+
+      await vapi.start(vapiWorkflowId, {
+        variableValues: {
+          full_name: fullName,
+          user_id: user?.id,
+        },
+      });
+    } catch (error) {
+      console.log("Failed to start call", error);
+      setConnecting(false);
     }
   };
+
+  // FIX #19 (Bug #19): Show a loading state for the user card
+  const userName = user ? (user.firstName + " " + (user.lastName || "")).trim() : "Guest";
 
   return (
     <div className="flex flex-col min-h-screen text-foreground overflow-hidden  pb-6 pt-24">
@@ -170,7 +164,6 @@ const GenerateProgramPage = () => {
                   isSpeaking ? "opacity-30" : "opacity-0"
                 } transition-opacity duration-300`}
               >
-                {/* Voice wave animation when speaking */}
                 <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 flex justify-center items-center h-20">
                   {[...Array(5)].map((_, i) => (
                     <div
@@ -180,7 +173,6 @@ const GenerateProgramPage = () => {
                       }`}
                       style={{
                         animationDelay: `${i * 0.1}s`,
-                        height: isSpeaking ? `${Math.random() * 50 + 20}%` : "5%",
                       }}
                     />
                   ))}
@@ -239,23 +231,32 @@ const GenerateProgramPage = () => {
             <div className="aspect-video flex flex-col items-center justify-center p-6 relative">
               {/* User Image */}
               <div className="relative size-32 mb-4">
-                <img
-                  src={user?.imageUrl}
-                  alt="User"
-                  // ADD THIS "size-full" class to make it rounded on all images
-                  className="size-full object-cover rounded-full"
-                />
+                {/* FIX #19 (Bug #19): Show image only when loaded, or a fallback */}
+                {isLoaded && user?.imageUrl ? (
+                  <img
+                    src={user.imageUrl}
+                    alt="User"
+                    className="size-full object-cover rounded-full"
+                  />
+                ) : (
+                  <div className="size-full rounded-full bg-card border border-border flex items-center justify-center">
+                    {/* Placeholder icon or skeleton */}
+                  </div>
+                )}
               </div>
 
               <h2 className="text-xl font-bold text-foreground">You</h2>
+              {/* FIX #19 (Bug #19): Use the guarded userName variable */}
               <p className="text-sm text-muted-foreground mt-1">
-                {user ? (user.firstName + " " + (user.lastName || "")).trim() : "Guest"}
+                {isLoaded ? userName : "Loading..."}
               </p>
 
               {/* User Ready Text */}
               <div className={`mt-4 flex items-center gap-2 px-3 py-1 rounded-full bg-card border`}>
-                <div className={`w-2 h-2 rounded-full bg-muted`} />
-                <span className="text-xs text-muted-foreground">Ready</span>
+                <div className={`w-2 h-2 rounded-full ${isLoaded ? 'bg-green-500' : 'bg-muted'}`} />
+                <span className="text-xs text-muted-foreground">
+                  {isLoaded ? "Ready" : "Loading..."}
+                </span>
               </div>
             </div>
           </Card>
@@ -300,14 +301,17 @@ const GenerateProgramPage = () => {
                   : "bg-primary hover:bg-primary/90"
             } text-white relative`}
             onClick={toggleCall}
-            disabled={connecting || callEnded}
+            // FIX #19 (Bug #19): Disable button until user is loaded
+            disabled={connecting || callEnded || !isLoaded}
           >
             {connecting && (
               <span className="absolute inset-0 rounded-full animate-ping bg-primary/50 opacity-75"></span>
             )}
 
             <span>
-              {callActive
+              {/* FIX #19 (Bug #19): Show loading state on button */}
+              {!isLoaded ? "Loading..." :
+                callActive
                 ? "End Call"
                 : connecting
                   ? "Connecting..."
@@ -322,4 +326,3 @@ const GenerateProgramPage = () => {
   );
 };
 export default GenerateProgramPage;
-
