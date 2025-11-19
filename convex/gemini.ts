@@ -1,7 +1,6 @@
 "use strict";
 import { action } from "./_generated/server"; 
-// FIX 1.2: Import supporting types
-import { GoogleGenerativeAI, Part, Content } from "@google/generative-ai"; 
+import { GoogleGenerativeAI, Part } from "@google/generative-ai"; 
 import { v } from "convex/values";
 import { z } from "zod";
 
@@ -15,9 +14,6 @@ const genAI = new GoogleGenerativeAI(geminiApiKey);
 // Define schema for the AI's expected response
 const nutritionInfoSchema = z.object({
   name: z.string(),
-  //
-  // BUG FIX: Use z.coerce.number() to be more robust against AI responses
-  //
   calories: z.coerce.number(),
   protein: z.coerce.number(),
   carbs: z.coerce.number(),
@@ -34,10 +30,8 @@ export const analyzeImage = action({
   handler: async (_, args): Promise<NutritionInfo> => {
     try {
       const model = genAI.getGenerativeModel({
-        //
-        // BUG FIX: Replaced invalid model name
-        //
-        model: "gemini-1.5-flash-latest", 
+        // FIX: Use a valid stable model version
+        model: "gemini-1.5-flash", 
         generationConfig: {
           responseMimeType: "application/json",
         },
@@ -45,8 +39,6 @@ export const analyzeImage = action({
 
       const prompt = `Please analyze this food image and provide detailed nutritional information. Return the data in this exact JSON format: {"name": "Food Name", "calories": number, "protein": number in grams, "carbs": number in grams, "fat": number in grams, "servingSize": "standard serving size", "additionalInfo": ["any special notes"]}`;
 
-      // FIX 1.2: Correctly shape the request payload
-      // The API expects 'parts' to be an array of 'Part' objects
       const parts: Part[] = [
         { text: prompt },
         {
@@ -57,7 +49,6 @@ export const analyzeImage = action({
         },
       ];
       
-      // FIX 1.2: Wrap the parts in a 'Content' object with a 'role'
       const request = {
         contents: [{ role: "user", parts }],
       };
@@ -66,14 +57,12 @@ export const analyzeImage = action({
       const responseText = result.response.text();
       const responseJson = JSON.parse(responseText);
 
-      // Validate the AI's response against our schema
       const validatedData = nutritionInfoSchema.parse(responseJson);
       return validatedData;
 
     } catch (error) {
       console.error("Error analyzing food in Convex action:", error);
       
-      // FIX 1.3: Safely handle the 'unknown' error type
       let errorMessage = "Failed to analyze the food";
       if (error instanceof z.ZodError) {
         errorMessage = `AI returned invalid data: ${error.message}`;

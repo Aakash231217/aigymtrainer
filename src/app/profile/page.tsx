@@ -3,7 +3,6 @@
 import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-// FIX: Removed 'SetStateAction' from this import
 import { useState, useEffect, useCallback } from "react"; 
 import ProfileHeader from "@/components/ProfileHeader";
 import NoFitnessPlan from "@/components/NoFitnessPlan";
@@ -25,7 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import FoodScanner from "./foodscanner";
 
-// FIX #12 (Bug #12): Define a proper type for incomplete items
+// FIX: Define type
 type IncompleteItem = {
   id: string;
   type: string;
@@ -33,25 +32,18 @@ type IncompleteItem = {
 };
 
 const ProfilePage = () => {
-  const { user, isLoaded } = useUser(); // Use isLoaded hook
+  const { user, isLoaded } = useUser();
   
-  // FIX #11 (Bug #11): Get userId only when user is loaded
   const userId = user?.id;
-
-  // FIX #11 (Bug #11): Disable the query if userId is not yet available
   const allPlans = useQuery(
     api.plans.getUserPlans,
-    userId ? { userId } : "skip" // Use "skip" to disable query
+    userId ? { userId } : "skip"
   );
   
   const [selectedPlanId, setSelectedPlanId] = useState<null | string>(null);
-  
-  // Track completed exercises and meals
   const [completedExercises, setCompletedExercises] = useState<Record<string, boolean>>({});
   const [completedMeals, setCompletedMeals] = useState<Record<string, boolean>>({});
-  
-  // For notifications
-  const [incompleteItems, setIncompleteItems] = useState<IncompleteItem[]>([]); // Use correct type
+  const [incompleteItems, setIncompleteItems] = useState<IncompleteItem[]>([]); 
   const [showNotificationDialog, setShowNotificationDialog] = useState(false);
 
   const activePlan = allPlans?.find((plan) => plan.isActive);
@@ -60,14 +52,11 @@ const ProfilePage = () => {
     ? allPlans?.find((plan) => plan._id === selectedPlanId)
     : activePlan;
     
-  // Update list of incomplete items
   const updateIncompleteItems = useCallback(() => {
     if (!currentPlan) return;
     
-    // FIX #12 (Bug #12): Use the correct IncompleteItem[] type
     const items: IncompleteItem[] = [];
     
-    // Check exercises
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
     const todayExercises = currentPlan.workoutPlan.exercises.find(ex => ex.day === today);
     
@@ -84,7 +73,6 @@ const ProfilePage = () => {
       });
     }
     
-    // Check meals
     currentPlan.dietPlan.meals.forEach((meal, idx) => {
       const mealId = `meal-${idx}`;
       if (!completedMeals[mealId]) {
@@ -99,7 +87,6 @@ const ProfilePage = () => {
     setIncompleteItems(items);
   }, [currentPlan, completedExercises, completedMeals]);
   
-  // Load saved progress from localStorage on component mount
   useEffect(() => {
     if (currentPlan?._id) {
       try {
@@ -119,14 +106,12 @@ const ProfilePage = () => {
     }
   }, [currentPlan]);
   
-  // Update incomplete items whenever completion status changes
   useEffect(() => {
     if (currentPlan) {
       updateIncompleteItems();
     }
   }, [completedExercises, completedMeals, currentPlan, updateIncompleteItems]);
   
-  // Handle checking/unchecking exercises
   const toggleExerciseComplete = (dayName: string, routineIndex: number) => {
     const routineId = `${dayName}-${routineIndex}`;
     
@@ -136,7 +121,6 @@ const ProfilePage = () => {
         [routineId]: !prev[routineId]
       };
       
-      // Save to localStorage
       try {
         if (currentPlan?._id) {
           localStorage.setItem(`exercises-${currentPlan._id}`, JSON.stringify(updated));
@@ -149,7 +133,6 @@ const ProfilePage = () => {
     });
   };
   
-  // Handle checking/unchecking meals
   const toggleMealComplete = (mealIndex: number) => {
     const mealId = `meal-${mealIndex}`;
     
@@ -159,7 +142,6 @@ const ProfilePage = () => {
         [mealId]: !prev[mealId]
       };
       
-      // Save to localStorage
       try {
         if (currentPlan?._id) {
           localStorage.setItem(`meals-${currentPlan._id}`, JSON.stringify(updated));
@@ -172,11 +154,9 @@ const ProfilePage = () => {
     });
   };
   
-  // Reset today's progress
   const resetTodayProgress = () => {
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
     
-    // Reset exercises for today
     const newExercises = { ...completedExercises };
     Object.keys(newExercises).forEach(key => {
       if (key.startsWith(today)) {
@@ -184,7 +164,6 @@ const ProfilePage = () => {
       }
     });
     
-    // Reset all meals
     const newMeals = { ...completedMeals };
     Object.keys(newMeals).forEach(key => {
       newMeals[key] = false;
@@ -205,7 +184,6 @@ const ProfilePage = () => {
     setShowNotificationDialog(false);
   };
 
-  // Calculate overall completion percentage
   const calculateCompletion = () => {
     if (!currentPlan) return 0;
     
@@ -213,14 +191,12 @@ const ProfilePage = () => {
     let totalItems = currentPlan.dietPlan.meals.length;
     let completedItems = 0;
     
-    // Count completed meals
     currentPlan.dietPlan.meals.forEach((_, idx) => {
       if (completedMeals[`meal-${idx}`]) {
         completedItems++;
       }
     });
     
-    // Add today's exercises
     const todayExercises = currentPlan.workoutPlan.exercises.find(ex => ex.day === today);
     if (todayExercises) {
       totalItems += todayExercises.routines.length;
@@ -235,12 +211,12 @@ const ProfilePage = () => {
     return totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
   };
 
-  // FIX #11 (Bug #11): Show a loading state while user/plans are loading
   if (!isLoaded || allPlans === undefined) {
-    // You can replace this with a proper loading spinner component
     return (
       <section className="relative z-10 pt-12 pb-32 flex-grow container mx-auto px-4">
-         {/* You can put a loading spinner component here */}
+         <div className="flex justify-center items-center h-64">
+           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+         </div>
       </section>
     );
   }
@@ -251,7 +227,6 @@ const ProfilePage = () => {
 
       {allPlans && allPlans.length > 0 ? (
         <div className="space-y-8">
-          {/* PLAN SELECTOR */}
           <div className="relative backdrop-blur-sm border border-border p-6">
             <CornerElements />
             <div className="flex items-center justify-between mb-4">
@@ -260,7 +235,6 @@ const ProfilePage = () => {
                 <span className="text-foreground">Fitness Plans</span>
               </h2>
               <div className="flex items-center gap-4">
-                {/* Notifications Button */}
                 <Button 
                   variant="outline" 
                   size="icon" 
@@ -275,7 +249,6 @@ const ProfilePage = () => {
                   )}
                 </Button>
                 <FoodScanner />
-
                 
                 <div className="font-mono text-xs text-muted-foreground">
                   TOTAL: {allPlans.length}
@@ -305,7 +278,6 @@ const ProfilePage = () => {
             </div>
           </div>
 
-          {/* Notifications Dialog */}
           <Dialog open={showNotificationDialog} onOpenChange={setShowNotificationDialog}>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
@@ -339,7 +311,6 @@ const ProfilePage = () => {
             </DialogContent>
           </Dialog>
 
-          {/* PLAN DETAILS */}
           {currentPlan && (
             <div className="relative backdrop-blur-sm border border-border rounded-lg p-6">
               <CornerElements />
@@ -352,7 +323,6 @@ const ProfilePage = () => {
                   </h3>
                 </div>
                 
-                {/* Progress Indicator */}
                 <div className="flex items-center gap-3">
                   <div className="text-xs text-muted-foreground">Today&apos;s Progress</div>
                   <div className="w-32 h-3 bg-background border border-border rounded-full overflow-hidden">
@@ -422,9 +392,6 @@ const ProfilePage = () => {
                             <AccordionContent className="pb-4 px-4">
                               <div className="space-y-3 mt-2">
                                 {exerciseDay.routines.map((routine, routineIndex) => {
-                                  //
-                                  // THIS IS THE FIX: Changed `dayName` to `exerciseDay.day`
-                                  //
                                   const routineId = `${exerciseDay.day}-${routineIndex}`;
                                   const isCompleted = completedExercises[routineId];
                                   
@@ -456,18 +423,17 @@ const ProfilePage = () => {
                                         )}
                                       </div>
                                       
-                                      {isToday && (
-                                        <div className="flex items-center ml-4">
-                                          <Button
-                                            variant={isCompleted ? "ghost" : "outline"}
-                                            size="icon"
-                                            className={`h-6 w-6 rounded-full p-0 ${isCompleted ? 'bg-green-500 text-white hover:bg-green-600' : ''}`}
-                                            onClick={() => toggleExerciseComplete(exerciseDay.day, routineIndex)}
-                                          >
-                                            <CheckIcon className="h-4 w-4" />
-                                          </Button>
-                                        </div>
-                                      )}
+                                      {/* FIX: Removed isToday check - allow logging any day */}
+                                      <div className="flex items-center ml-4">
+                                        <Button
+                                          variant={isCompleted ? "ghost" : "outline"}
+                                          size="icon"
+                                          className={`h-6 w-6 rounded-full p-0 ${isCompleted ? 'bg-green-500 text-white hover:bg-green-600' : ''}`}
+                                          onClick={() => toggleExerciseComplete(exerciseDay.day, routineIndex)}
+                                        >
+                                          <CheckIcon className="h-4 w-4" />
+                                        </Button>
+                                      </div>
                                     </div>
                                   );
                                 })}
@@ -544,7 +510,6 @@ const ProfilePage = () => {
           )}
         </div>
       ) : (
-        // FIX #11 (Bug #11): Show NoFitnessPlan only if loading is finished and there are no plans
         <NoFitnessPlan />
       )}
     </section>

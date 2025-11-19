@@ -6,6 +6,9 @@ import { vapi } from "@/lib/vapi";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+// FIX: Import convex hooks for polling
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 
 const GenerateProgramPage = () => {
   const [callActive, setCallActive] = useState(false);
@@ -14,11 +17,22 @@ const GenerateProgramPage = () => {
   const [messages, setMessages] = useState<any[]>([]);
   const [callEnded, setCallEnded] = useState(false);
 
-  // FIX #19 (Bug #19): Get 'isLoaded' to check if user is available
   const { user, isLoaded } = useUser();
   const router = useRouter();
 
+  // FIX: Poll for user plans to detect when the new plan is created
+  const userId = user?.id;
+  const userPlans = useQuery(api.plans.getUserPlans, userId ? { userId } : "skip");
+  const initialPlansCountRef = useRef<number | null>(null);
+
   const messageContainerRef = useRef<HTMLDivElement>(null);
+
+  // FIX: Capture initial plan count
+  useEffect(() => {
+    if (isLoaded && userPlans && initialPlansCountRef.current === null) {
+      initialPlansCountRef.current = userPlans.length;
+    }
+  }, [userPlans, isLoaded]);
 
   // auto-scroll messages
   useEffect(() => {
@@ -27,16 +41,25 @@ const GenerateProgramPage = () => {
     }
   }, [messages]);
 
-  // navigate user to profile page after the call ends
+  // FIX: Robust redirection logic
   useEffect(() => {
     if (callEnded) {
-      const redirectTimer = setTimeout(() => {
-        router.push("/profile");
-      }, 1500);
+      // Fallback timeout in case polling takes too long (5 seconds)
+      const fallbackTimer = setTimeout(() => {
+         router.push("/profile");
+      }, 5000);
 
-      return () => clearTimeout(redirectTimer);
+      // Check if a new plan has appeared
+      if (userPlans && initialPlansCountRef.current !== null) {
+        if (userPlans.length > initialPlansCountRef.current) {
+          clearTimeout(fallbackTimer);
+          router.push("/profile");
+        }
+      }
+
+      return () => clearTimeout(fallbackTimer);
     }
-  }, [callEnded, router]);
+  }, [callEnded, userPlans, router]);
 
   // setup event listeners for vapi
   useEffect(() => {
@@ -67,7 +90,6 @@ const GenerateProgramPage = () => {
       }
     };
 
-    // Remove unused error parameter from handleError to fix lint error
     const handleError = () => {
       setConnecting(false);
       setCallActive(false);
@@ -86,7 +108,6 @@ const GenerateProgramPage = () => {
     }
 
 
-    // cleanup event listeners on unmount
     return () => {
       try {
         vapi
@@ -119,6 +140,11 @@ const GenerateProgramPage = () => {
       setConnecting(true);
       setMessages([]);
       setCallEnded(false);
+      
+      // Reset plan count reference when starting a new call
+      if (userPlans) {
+        initialPlansCountRef.current = userPlans.length;
+      }
 
       const fullName = user?.firstName
         ? `${user.firstName} ${user.lastName || ""}`.trim()
@@ -136,13 +162,11 @@ const GenerateProgramPage = () => {
     }
   };
 
-  // FIX #19 (Bug #19): Show a loading state for the user card
   const userName = user ? (user.firstName + " " + (user.lastName || "")).trim() : "Guest";
 
   return (
     <div className="flex flex-col min-h-screen text-foreground overflow-hidden  pb-6 pt-24">
       <div className="container mx-auto px-4 h-full max-w-5xl">
-        {/* Title */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold font-mono">
             <span>Generate Your </span>
@@ -153,12 +177,9 @@ const GenerateProgramPage = () => {
           </p>
         </div>
 
-        {/* VIDEO CALL AREA */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {/* AI ASSISTANT CARD */}
           <Card className="bg-card/90 backdrop-blur-sm border border-border overflow-hidden relative">
             <div className="aspect-video flex flex-col items-center justify-center p-6 relative">
-              {/* AI VOICE ANIMATION */}
               <div
                 className={`absolute inset-0 ${
                   isSpeaking ? "opacity-30" : "opacity-0"
@@ -179,7 +200,6 @@ const GenerateProgramPage = () => {
                 </div>
               </div>
 
-              {/* AI IMAGE */}
               <div className="relative size-32 mb-4">
                 <div
                   className={`absolute inset-0 bg-primary opacity-10 rounded-full blur-lg ${
@@ -200,8 +220,6 @@ const GenerateProgramPage = () => {
               <h2 className="text-xl font-bold text-foreground">Athonix AI</h2>
               <p className="text-sm text-muted-foreground mt-1">Fitness & Diet Coach</p>
 
-              {/* SPEAKING INDICATOR */}
-
               <div
                 className={`mt-4 flex items-center gap-2 px-3 py-1 rounded-full bg-card border border-border ${
                   isSpeaking ? "border-primary" : ""
@@ -219,19 +237,16 @@ const GenerateProgramPage = () => {
                     : callActive
                       ? "Listening..."
                       : callEnded
-                        ? "Redirecting to profile..."
+                        ? "Generating your plan..."
                         : "Waiting..."}
                 </span>
               </div>
             </div>
           </Card>
 
-          {/* USER CARD */}
           <Card className={`bg-card/90 backdrop-blur-sm border overflow-hidden relative`}>
             <div className="aspect-video flex flex-col items-center justify-center p-6 relative">
-              {/* User Image */}
               <div className="relative size-32 mb-4">
-                {/* FIX #19 (Bug #19): Show image only when loaded, or a fallback */}
                 {isLoaded && user?.imageUrl ? (
                   <img
                     src={user.imageUrl}
@@ -240,18 +255,15 @@ const GenerateProgramPage = () => {
                   />
                 ) : (
                   <div className="size-full rounded-full bg-card border border-border flex items-center justify-center">
-                    {/* Placeholder icon or skeleton */}
                   </div>
                 )}
               </div>
 
               <h2 className="text-xl font-bold text-foreground">You</h2>
-              {/* FIX #19 (Bug #19): Use the guarded userName variable */}
               <p className="text-sm text-muted-foreground mt-1">
                 {isLoaded ? userName : "Loading..."}
               </p>
 
-              {/* User Ready Text */}
               <div className={`mt-4 flex items-center gap-2 px-3 py-1 rounded-full bg-card border`}>
                 <div className={`w-2 h-2 rounded-full ${isLoaded ? 'bg-green-500' : 'bg-muted'}`} />
                 <span className="text-xs text-muted-foreground">
@@ -262,7 +274,6 @@ const GenerateProgramPage = () => {
           </Card>
         </div>
 
-        {/* MESSAGE COINTER  */}
         {messages.length > 0 && (
           <div
             ref={messageContainerRef}
@@ -282,7 +293,7 @@ const GenerateProgramPage = () => {
                 <div className="message-item animate-fadeIn">
                   <div className="font-semibold text-xs text-primary mb-1">System:</div>
                   <p className="text-foreground">
-                    Your fitness program has been created! Redirecting to your profile...
+                    Call ended. Analyzing data and generating your custom program...
                   </p>
                 </div>
               )}
@@ -290,18 +301,16 @@ const GenerateProgramPage = () => {
           </div>
         )}
 
-        {/* CALL CONTROLS */}
         <div className="w-full flex justify-center gap-4">
           <Button
             className={`w-40 text-xl rounded-3xl ${
               callActive
                 ? "bg-destructive hover:bg-destructive/90"
                 : callEnded
-                  ? "bg-green-600 hover:bg-green-700"
+                  ? "bg-muted text-muted-foreground cursor-not-allowed"
                   : "bg-primary hover:bg-primary/90"
             } text-white relative`}
             onClick={toggleCall}
-            // FIX #19 (Bug #19): Disable button until user is loaded
             disabled={connecting || callEnded || !isLoaded}
           >
             {connecting && (
@@ -309,14 +318,13 @@ const GenerateProgramPage = () => {
             )}
 
             <span>
-              {/* FIX #19 (Bug #19): Show loading state on button */}
               {!isLoaded ? "Loading..." :
                 callActive
                 ? "End Call"
                 : connecting
                   ? "Connecting..."
                   : callEnded
-                    ? "View Profile"
+                    ? "Creating..."
                     : "Start Call"}
             </span>
           </Button>

@@ -1,6 +1,6 @@
 import Vapi from "@vapi-ai/web";
 
-// FIX #8 (Bug #8): Define the type for the Vapi client
+// Define the type for the Vapi client
 type VapiClient = Vapi | null;
 
 let _vapi: VapiClient = null;
@@ -28,27 +28,27 @@ export function getVapi(): Vapi {
 export default getVapi;
 
 // Provide a named `vapi` export that behaves like the Vapi instance but lazily
-// initializes it on first access. This keeps existing imports such as
-// `import { vapi } from '@/lib/vapi'` working while still avoiding
-// module-level instantiation.
-
-// FIX #8 (Bug #8): Replace 'any' with the actual 'Vapi' type
+// initializes it on first access.
 export const vapi: Vapi = new Proxy(
-	{},
+	{} as Vapi,
 	{
-		get(_, prop: keyof Vapi) {
+		get(_, prop: string | symbol) {
 			const instance = getVapi();
-			const value = instance[prop];
+      // Safe cast because we know 'prop' is being accessed on the Vapi interface
+			const value = instance[prop as keyof Vapi];
 			if (typeof value === 'function') {
         // Bind the function to the correct 'this' context
-        return (value as (...args: any[]) => any).bind(instance);
+        return value.bind(instance);
       }
 			return value;
 		},
-		set(_, prop: keyof Vapi, val) {
+		set(_, prop: string | symbol, val) {
 			const instance = getVapi();
-			(instance as any)[prop] = val; // Use 'any' here for broad compatibility
+      // FIX: We allow setting properties, but logically this proxy is mostly for method access.
+      // This cast is still necessary to satisfy TS constraints on the Proxy target vs handler,
+      // but we've removed the 'any' cast on the instance itself in the getter.
+      (instance as unknown as Record<string | symbol, any>)[prop] = val;
 			return true;
 		},
 	}
-) as Vapi;
+);

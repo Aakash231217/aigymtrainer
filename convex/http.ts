@@ -4,10 +4,8 @@ import { Webhook } from "svix";
 import { api } from "./_generated/api";
 import { httpAction } from "./_generated/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { v } from "convex/values";
-import { z } from "zod"; // Using zod for robust validation
+import { z } from "zod";
 
-// FIX #3 (Bug #3): Validate env var at startup
 const geminiApiKey = process.env.GEMINI_API_KEY;
 if (!geminiApiKey) {
   throw new Error("Missing GEMINI_API_KEY environment variable");
@@ -36,7 +34,6 @@ http.route({
     }
 
     const body = await request.text();
-    const payload = JSON.parse(body);
 
     const wh = new Webhook(webhookSecret);
     let evt: WebhookEvent;
@@ -56,9 +53,7 @@ http.route({
 
     if (eventType === "user.created") {
       const { id, first_name, last_name, image_url, email_addresses } = evt.data;
-
       const email = email_addresses[0].email_address;
-
       const name = `${first_name || ""} ${last_name || ""}`.trim();
 
       try {
@@ -69,7 +64,6 @@ http.route({
           clerkId: id,
         });
       } catch (error) {
-        // FIX #11 (Bug #11): Replaced console.log with console.error for actual errors
         console.error("Error creating user:", error);
         return new Response("Error creating user", { status: 500 });
       }
@@ -77,7 +71,6 @@ http.route({
 
     if (eventType === "user.updated") {
       const { id, email_addresses, first_name, last_name, image_url } = evt.data;
-
       const email = email_addresses[0].email_address;
       const name = `${first_name || ""} ${last_name || ""}`.trim();
 
@@ -89,7 +82,6 @@ http.route({
           image: image_url,
         });
       } catch (error) {
-        // FIX #11 (Bug #11): Replaced console.log with console.error
         console.error("Error updating user:", error);
         return new Response("Error updating user", { status: 500 });
       }
@@ -99,11 +91,11 @@ http.route({
   }),
 });
 
-// FIX #6 & #7 (Bugs #6, #7): Define Zod schemas for validation (replaces 'any')
 const workoutRoutineSchema = z.object({
   name: z.string(),
   sets: z.coerce.number().int().positive().default(1),
   reps: z.coerce.number().int().positive().default(10),
+  description: z.string().optional(), // Schema supports it, prompt needs to ask for it
 });
 
 const exerciseDaySchema = z.object({
@@ -126,18 +118,13 @@ const dietPlanSchema = z.object({
   meals: z.array(dietMealSchema),
 });
 
-
-// FIX #6 & #7 (Bugs #6, #7): Replaced 'validateWorkoutPlan' with Zod parsing.
-// This is much safer than the 'any' type and manual parsing.
 function parseWorkoutPlan(plan: unknown): z.infer<typeof workoutPlanSchema> {
   return workoutPlanSchema.parse(plan);
 }
 
-// FIX #6 & #7 (Bugs #6, #7): Replaced 'validateDietPlan' with Zod parsing.
 function parseDietPlan(plan: unknown): z.infer<typeof dietPlanSchema> {
   return dietPlanSchema.parse(plan);
 }
-
 
 http.route({
   path: "/vapi/generate-program",
@@ -158,14 +145,9 @@ http.route({
         dietary_restrictions,
       } = payload;
 
-      // FIX #11 (Bug #11): Removed noisy console.log of the payload
-      // console.log("Payload is here:", payload);
-
       const model = genAI.getGenerativeModel({
-        //
-        // NEW BUG FIX: Replaced invalid model name
-        //
-        model: "gemini-1.5-flash-latest",
+        // FIX: Use stable model
+        model: "gemini-1.5-flash",
         generationConfig: {
           temperature: 0.4, 
           topP: 0.9,
@@ -173,6 +155,7 @@ http.route({
         },
       });
 
+      // FIX: Updated prompt to explicitly request descriptions
       const workoutPrompt = `You are an experienced fitness coach creating a personalized workout plan based on:
       Age: ${age}
       Height: ${height}
@@ -183,19 +166,14 @@ http.route({
       Fitness level: ${fitness_level}
       
       As a professional coach:
-      - Consider muscle group splits to avoid overtraining the same muscles on consecutive days
-      - Design exercises that match the fitness level and account for any injuries
-      - Structure the workouts to specifically target the user's fitness goal
+      - Consider muscle group splits
+      - Design exercises that match the fitness level
+      - Structure workouts to target the goal
       
       CRITICAL SCHEMA INSTRUCTIONS:
-      - Your output MUST contain ONLY the fields specified below, NO ADDITIONAL FIELDS
-      - "sets" and "reps" MUST ALWAYS be NUMBERS, never strings
-      - For example: "sets": 3, "reps": 10
-      - Do NOT use text like "reps": "As many as possible" or "reps": "To failure"
-      - Instead use specific numbers like "reps": 12 or "reps": 15
-      - For cardio, use "sets": 1, "reps": 1 or another appropriate number
-      - NEVER include strings for numerical fields
-      - NEVER add extra fields not shown in the example below
+      - Your output MUST contain ONLY the fields specified below.
+      - "sets" and "reps" MUST ALWAYS be NUMBERS.
+      - Include a brief "description" for each exercise explaining proper form or cues.
       
       Return a JSON object with this EXACT structure:
       {
@@ -207,19 +185,18 @@ http.route({
               {
                 "name": "Exercise Name",
                 "sets": 3,
-                "reps": 10
+                "reps": 10,
+                "description": "Brief form cue (e.g., Keep back straight)"
               }
             ]
           }
         ]
       }
       
-      DO NOT add any fields that are not in this example. Your response must be a valid JSON object with no additional text.`;
+      DO NOT add extra fields beyond these.`;
 
       const workoutResult = await model.generateContent(workoutPrompt);
       const workoutPlanText = workoutResult.response.text();
-
-      // FIX #6 (Bug #6): Use safe Zod parsing instead of 'any'
       const workoutPlanJson = JSON.parse(workoutPlanText);
       const workoutPlan = parseWorkoutPlan(workoutPlanJson);
 
@@ -231,43 +208,29 @@ http.route({
         Dietary restrictions: ${dietary_restrictions}
         
         As a professional nutrition coach:
-        - Calculate appropriate daily calorie intake based on the person's stats and goals
-        - Create a balanced meal plan with proper macronutrient distribution
-        - Include a variety of nutrient-dense foods while respecting dietary restrictions
-        - Consider meal timing around workouts for optimal performance and recovery
+        - Calculate appropriate daily calorie intake
+        - Create a balanced meal plan
         
         CRITICAL SCHEMA INSTRUCTIONS:
-        - Your output MUST contain ONLY the fields specified below, NO ADDITIONAL FIELDS
-        - "dailyCalories" MUST be a NUMBER, not a string
-        - DO NOT add fields like "supplements", "macros", "notes", or ANYTHING else
-        - ONLY include the EXACT fields shown in the example below
+        - "dailyCalories" MUST be a NUMBER.
         - Each meal should include ONLY a "name" and "foods" array
 
-        Return a JSON object with this EXACT structure and no other fields:
+        Return a JSON object with this EXACT structure:
         {
           "dailyCalories": 2000,
           "meals": [
             {
               "name": "Breakfast",
               "foods": ["Oatmeal with berries", "Greek yogurt", "Black coffee"]
-            },
-            {
-              "name": "Lunch",
-              "foods": ["Grilled chicken salad", "Whole grain bread", "Water"]
             }
           ]
-        }
-        
-        DO NOT add any fields that are not in this example. Your response must be a valid JSON object with no additional text.`;
+        }`;
 
       const dietResult = await model.generateContent(dietPrompt);
       const dietPlanText = dietResult.response.text();
-
-      // FIX #6 (Bug #6): Use safe Zod parsing instead of 'any'
       const dietPlanJson = JSON.parse(dietPlanText);
       const dietPlan = parseDietPlan(dietPlanJson);
 
-      // save to our DB: CONVEX
       const planId = await ctx.runMutation(api.plans.createPlan, {
         userId: user_id,
         dietPlan,

@@ -25,7 +25,8 @@ export const getSalesResponse = action({
   handler: async (_, args): Promise<SalesResponse> => {
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash-latest",
+        // FIX: Use a valid stable model version
+        model: "gemini-1.5-flash",
         generationConfig: {
           responseMimeType: "application/json",
         },
