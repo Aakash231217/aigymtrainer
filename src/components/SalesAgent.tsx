@@ -49,7 +49,7 @@ if (isClient) {
       // Convert Date objects to ISO strings for storage
       const serializable = messages.map(msg => ({
         ...msg,
-        timestamp: msg.timestamp instanceof Date ? msg.timestamp.toISOString() : msg.timestamp
+        timestamp: msg.timestamp instanceof Date ? msg.timestamp.toISOString() : (typeof msg.timestamp === 'string' ? msg.timestamp : new Date().toISOString())
       }));
       localStorage.setItem('athonix_chat_history', JSON.stringify(serializable));
     }
