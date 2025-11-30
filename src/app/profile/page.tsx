@@ -127,6 +127,8 @@ const ProfilePage = () => {
         }
       } catch (error) {
         console.error("Error saving exercise progress:", error);
+        // Consider showing user notification or reverting state
+        setCompletedExercises(prev => ({ ...prev, [routineId]: prev[routineId] }));
       }
       
       return updated;
