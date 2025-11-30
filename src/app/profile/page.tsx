@@ -3,7 +3,7 @@
 import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { useState, useEffect, useCallback } from "react"; 
+import { useState, useEffect, useCallback } from "react";
 import ProfileHeader from "@/components/ProfileHeader";
 import NoFitnessPlan from "@/components/NoFitnessPlan";
 import CornerElements from "@/components/CornerElements";
@@ -31,19 +31,39 @@ type IncompleteItem = {
   name: string;
 };
 
+// --- FIX 2/3: Local Storage Helper for Consistent Error Handling (Saving) ---
+// This function wraps localStorage.setItem with a try...catch block
+// and notifies the user upon failure, as required by the code review.
+const setSafeLocalStorage = (key: string, value: string): boolean => {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(key, value);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error(`Local Storage write error for key "${key}":`, error);
+    // Notify the user about the failure
+    alert("Warning: Failed to save progress! Local storage is full or unavailable. Your changes might be lost upon refreshing.");
+    return false;
+  }
+};
+
+
 const ProfilePage = () => {
   const { user, isLoaded } = useUser();
   
+  // --- FIX 1/3: Type Safety Assertion ---
   const userId = user?.id;
   const allPlans = useQuery(
     api.plans.getUserPlans,
-    userId ? { userId } : "skip"
+    userId ? { userId: userId as string } : "skip" // Explicit type assertion for Convex API call
   );
   
   const [selectedPlanId, setSelectedPlanId] = useState<null | string>(null);
   const [completedExercises, setCompletedExercises] = useState<Record<string, boolean>>({});
   const [completedMeals, setCompletedMeals] = useState<Record<string, boolean>>({});
-  const [incompleteItems, setIncompleteItems] = useState<IncompleteItem[]>([]); 
+  const [incompleteItems, setIncompleteItems] = useState<IncompleteItem[]>([]);
   const [showNotificationDialog, setShowNotificationDialog] = useState(false);
 
   const activePlan = allPlans?.find((plan) => plan.isActive);
@@ -100,8 +120,11 @@ const ProfilePage = () => {
         if (savedMeals) {
           setCompletedMeals(JSON.parse(savedMeals));
         }
+      // --- FIX 2/3: Notify user on load failure ---
       } catch (error) {
-        console.error("Error loading saved progress:", error);
+        console.error("Error loading saved progress from Local Storage:", error);
+        alert("Warning: Could not load saved progress. Your local storage might be corrupted or inaccessible.");
+        // Note: We don't revert state here, as falling back to initial state (empty progress) is the safest action.
       }
     }
   }, [currentPlan]);
@@ -116,19 +139,22 @@ const ProfilePage = () => {
     const routineId = `${dayName}-${routineIndex}`;
     
     setCompletedExercises(prev => {
-      const updated = { 
+      const isCurrentlyCompleted = !!prev[routineId];
+      const updated = {
         ...prev,
-        [routineId]: !prev[routineId]
+        [routineId]: !isCurrentlyCompleted
       };
       
-      try {
-        if (currentPlan?._id) {
-          localStorage.setItem(`exercises-${currentPlan._id}`, JSON.stringify(updated));
+      // --- FIX 3/3: Use safe function for saving ---
+      if (currentPlan?._id) {
+        const savedSuccessfully = setSafeLocalStorage(`exercises-${currentPlan._id}`, JSON.stringify(updated));
+
+        // If saving fails, revert the state change to maintain data integrity in the session
+        if (!savedSuccessfully) {
+          console.warn("Reverting local exercise state due to save failure.");
+          // Revert the state change by returning the previous state
+          return prev;
         }
-      } catch (error) {
-        console.error("Error saving exercise progress:", error);
-        // Consider showing user notification or reverting state
-        setCompletedExercises(prev => ({ ...prev, [routineId]: prev[routineId] }));
       }
       
       return updated;
@@ -139,17 +165,21 @@ const ProfilePage = () => {
     const mealId = `meal-${mealIndex}`;
     
     setCompletedMeals(prev => {
-      const updated = { 
+      const isCurrentlyCompleted = !!prev[mealId];
+      const updated = {
         ...prev,
-        [mealId]: !prev[mealId]
+        [mealId]: !isCurrentlyCompleted
       };
       
-      try {
-        if (currentPlan?._id) {
-          localStorage.setItem(`meals-${currentPlan._id}`, JSON.stringify(updated));
+      // --- FIX 3/3: Use safe function for saving ---
+      if (currentPlan?._id) {
+        const savedSuccessfully = setSafeLocalStorage(`meals-${currentPlan._id}`, JSON.stringify(updated));
+
+        // If saving fails, revert the state change
+        if (!savedSuccessfully) {
+          console.warn("Reverting local meal state due to save failure.");
+          return prev;
         }
-      } catch (error) {
-        console.error("Error saving meal progress:", error);
       }
       
       return updated;
@@ -171,16 +201,23 @@ const ProfilePage = () => {
       newMeals[key] = false;
     });
     
-    setCompletedExercises(newExercises);
-    setCompletedMeals(newMeals);
-    
-    try {
-      if (currentPlan?._id) {
-        localStorage.setItem(`exercises-${currentPlan._id}`, JSON.stringify(newExercises));
-        localStorage.setItem(`meals-${currentPlan._id}`, JSON.stringify(newMeals));
+    // Attempt to save changes first
+    let savedSuccessfully = true;
+    if (currentPlan?._id) {
+      savedSuccessfully = setSafeLocalStorage(`exercises-${currentPlan._id}`, JSON.stringify(newExercises));
+      if (savedSuccessfully) {
+        // Only attempt to save the second key if the first succeeded
+        savedSuccessfully = setSafeLocalStorage(`meals-${currentPlan._id}`, JSON.stringify(newMeals));
       }
-    } catch (error) {
-      console.error("Error resetting progress:", error);
+    }
+    
+    // Only update React state if the local storage operations were successful
+    if (savedSuccessfully) {
+      setCompletedExercises(newExercises);
+      setCompletedMeals(newMeals);
+    } else {
+      console.warn("Reset operation aborted due to local storage save failure.");
+      // No alert is needed here as setSafeLocalStorage already handles it
     }
     
     setShowNotificationDialog(false);
@@ -216,9 +253,9 @@ const ProfilePage = () => {
   if (!isLoaded || allPlans === undefined) {
     return (
       <section className="relative z-10 pt-12 pb-32 flex-grow container mx-auto px-4">
-         <div className="flex justify-center items-center h-64">
-           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-         </div>
+          <div className="flex justify-center items-center h-64">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          </div>
       </section>
     );
   }
@@ -237,9 +274,9 @@ const ProfilePage = () => {
                 <span className="text-foreground">Fitness Plans</span>
               </h2>
               <div className="flex items-center gap-4">
-                <Button 
-                  variant="outline" 
-                  size="icon" 
+                <Button
+                  variant="outline"
+                  size="icon"
                   className="relative"
                   onClick={() => setShowNotificationDialog(true)}
                 >
@@ -328,7 +365,7 @@ const ProfilePage = () => {
                 <div className="flex items-center gap-3">
                   <div className="text-xs text-muted-foreground">Today&apos;s Progress</div>
                   <div className="w-32 h-3 bg-background border border-border rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className="h-full bg-primary"
                       style={{ width: `${calculateCompletion()}%` }}
                     ></div>
