@@ -137,12 +137,20 @@ const ProfilePage = () => {
       }
       // Save to backend
       if (currentPlan?._id && userId) {
-        saveProgress({
-          planId: currentPlan._id,
-          userId,
-          completedExercises: updated,
-          completedMeals
-        });
+// Move saveProgress inside the setState callback or use useEffect to watch state changes
+setCompletedExercises(prev => {
+  const updated = { ...prev, [routineId]: !prev[routineId] };
+  // Save after state update
+  setTimeout(() => {
+    saveProgress({
+      planId: currentPlan._id,
+      userId,
+      completedExercises: updated,
+      completedMeals: completedMeals
+    });
+  }, 0);
+  return updated;
+});
       }
       return updated;
     });
