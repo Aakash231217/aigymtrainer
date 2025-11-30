@@ -114,8 +114,7 @@ const [messages, setMessages] = useState<Message[]>([]);
       }
     };
     saveProgram();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [callEnded]);
+    }, [callEnded, messages, user?.id]);
 
   // setup event listeners for vapi
   useEffect(() => {
