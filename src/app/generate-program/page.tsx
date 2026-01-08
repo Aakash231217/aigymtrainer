@@ -11,8 +11,15 @@ const GenerateProgramPage = () => {
   const [callActive, setCallActive] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [messages, setMessages] = useState<any[]>([]);
+  interface Message {
+  id: string;
+  content: string;
+  role: 'user' | 'assistant';
+  timestamp: string;
+}
+const [messages, setMessages] = useState<Message[]>([]);
   const [callEnded, setCallEnded] = useState(false);
+  const [saving, setSaving] = useState(false); // NEW: track saving state
 
   const { user } = useUser();
   const router = useRouter();
@@ -50,6 +57,29 @@ const GenerateProgramPage = () => {
     }
   }, [messages]);
 
+  // Load last saved program/messages on mount (optional, for persistence)
+  useEffect(() => {
+    const fetchSavedProgram = async () => {
+      if (!user?.id) return;
+      try {
+        const res = await fetch("/api/get-program", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: user.id })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.messages) {
+            setMessages(data.messages);
+          }
+        }
+      } catch (err) {
+        // ignore
+      }
+    };
+    fetchSavedProgram();
+  }, [user?.id]);
+
   // navigate user to profile page after the call ends
   useEffect(() => {
     if (callEnded) {
@@ -60,6 +90,31 @@ const GenerateProgramPage = () => {
       return () => clearTimeout(redirectTimer);
     }
   }, [callEnded, router]);
+
+  // Save program/messages to backend when call ends
+  useEffect(() => {
+    const saveProgram = async () => {
+      if (callEnded && messages.length > 0 && user?.id) {
+        setSaving(true);
+        try {
+          await fetch("/api/save-program", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId: user.id,
+              messages: messages,
+              createdAt: new Date().toISOString()
+            })
+          });
+        } catch (err) {
+          // Optionally show error
+        } finally {
+          setSaving(false);
+        }
+      }
+    };
+    saveProgram();
+    }, [callEnded, messages, user?.id]);
 
   // setup event listeners for vapi
   useEffect(() => {
@@ -227,7 +282,7 @@ const GenerateProgramPage = () => {
                     : callActive
                       ? "Listening..."
                       : callEnded
-                        ? "Redirecting to profile..."
+                        ? saving ? "Saving program..." : "Redirecting to profile..."
                         : "Waiting..."}
                 </span>
               </div>

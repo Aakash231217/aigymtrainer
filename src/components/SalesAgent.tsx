@@ -24,16 +24,34 @@ const SalesAgent = () => {
 
   // Initialize messages from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('athonix_chat_history');
-    if (saved) {
-      setMessages(JSON.parse(saved));
+    const isClient = typeof window !== 'undefined';
+if (isClient) {
+      const saved = localStorage.getItem('athonix_chat_history');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          // Convert timestamp strings back to Date objects
+          const restored = parsed.map((msg: any) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          }));
+          setMessages(restored);
+        } catch (e) {
+          setMessages([]);
+        }
+      }
     }
   }, []);
 
   // Save messages to localStorage whenever they change
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('athonix_chat_history', JSON.stringify(messages));
+      // Convert Date objects to ISO strings for storage
+      const serializable = messages.map(msg => ({
+        ...msg,
+        timestamp: msg.timestamp instanceof Date ? msg.timestamp.toISOString() : (typeof msg.timestamp === 'string' ? msg.timestamp : new Date().toISOString())
+      }));
+      localStorage.setItem('athonix_chat_history', JSON.stringify(serializable));
     }
   }, [messages]);
 
@@ -200,7 +218,9 @@ const SalesAgent = () => {
               variant="outline"
               size="sm"
               onClick={() => {
-                localStorage.removeItem('athonix_chat_history');
+                if (typeof window !== 'undefined') {
+                  localStorage.removeItem('athonix_chat_history');
+                }
                 setMessages([]);
                 speechSynthesis?.cancel();
               }}
