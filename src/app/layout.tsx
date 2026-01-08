@@ -5,6 +5,7 @@ import "./globals.css";
 import ConvexClerkProvider from "@/providers/ConvexClerkProvider";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import PWAProviderClient from "@/components/PWAProviderClient";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -115,6 +116,9 @@ export default function RootLayout({
           
           <main className="pt-24 flex-grow">{children}</main>
           <Footer />
+          
+          {/* PWA Components */}
+          <PWAProviderClient />
           
           {/* Schema.org structured data */}
           <script

@@ -1,0 +1,20 @@
+For your PWA to appear correctly on Google Play Store, you'll need to provide high-quality screenshots:
+
+1. Phone Screenshots (recommended sizes):
+   - 1080 x 1920 pixels (portrait)
+   - At least 3-8 screenshots showing key features
+
+2. Tablet Screenshots (if applicable):
+   - 1080 x 1920 pixels or 1920 x 1080 pixels (7-10 inch tablets)
+   - At least 3-8 screenshots showing key features
+
+These screenshots should highlight the main features of your Athonix app:
+- Home page/dashboard
+- Workout creation interface
+- AI assistant interaction
+- Exercise tracking
+- User profile/stats
+- Group features
+- Any other standout features
+
+Place these screenshots in the /public/screenshots/ directory and reference them in your manifest.json file.

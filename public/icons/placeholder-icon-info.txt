@@ -1,0 +1,25 @@
+For a complete PWA, you'll need to create app icons in the following sizes:
+
+- icon-72x72.png
+- icon-96x96.png
+- icon-128x128.png
+- icon-144x144.png
+- icon-152x152.png
+- icon-192x192.png
+- icon-384x384.png
+- icon-512x512.png
+
+You should create these icons based on your app logo/branding.
+Use a tool like Figma, Adobe Illustrator, or online services like:
+- https://www.pwabuilder.com/imageGenerator
+- https://app-manifest.firebaseapp.com/
+
+These icons should be placed in the /public/icons/ directory.
+
+For the Google Play Store specifically, you'll also need:
+1. A 512x512 app icon
+2. A feature graphic (1024x500)
+3. Screenshots in various sizes (typically 16:9 ratio)
+4. A privacy policy page
+
+Once you have your icons, replace the placeholder icons and update the SHA256 fingerprint in the assetlinks.json file with the one generated during your Google Play Store app creation process.
